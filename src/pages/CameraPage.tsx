@@ -15,7 +15,6 @@ export function CameraPage() {
   const [tab, setTab] = useState<Tab>('meal')
   const [mealResult, setMealResult] = useState<MealAnalysisResult | null>(null)
   const [wodResult, setWodResult] = useState<WODAnalysisResult | null>(null)
-  const [smartResult, setSmartResult] = useState<'food' | 'workout' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [wodInput, setWodInput] = useState('')
@@ -28,7 +27,6 @@ export function CameraPage() {
     setError('')
     setMealResult(null)
     setWodResult(null)
-    setSmartResult(null)
     setShowSourceChoice(false)
     setLoading(true)
     try {
@@ -41,11 +39,9 @@ export function CameraPage() {
       const result = await analyzeImageSmart(dataUrl)
       if (result.type === 'food') {
         setMealResult(result.meal)
-        setSmartResult('food')
         setTab('meal')
       } else {
         setWodResult(result.wod)
-        setSmartResult('workout')
         setTab('wod')
       }
     } catch (err) {
@@ -60,7 +56,6 @@ export function CameraPage() {
     if (mealResult) {
       addMeal(Math.round(mealResult.calories), Math.round(mealResult.protein || 0))
       setMealResult(null)
-      setSmartResult(null)
     }
   }
 
@@ -98,7 +93,6 @@ export function CameraPage() {
       }
       setWodResult(null)
       setWodInput('')
-      setSmartResult(null)
     }
   }
 
@@ -278,6 +272,8 @@ export function CameraPage() {
             </Card>
           )}
         </>
+      )}
+      </>
       )}
     </div>
   )
