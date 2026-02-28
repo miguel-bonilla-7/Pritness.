@@ -117,7 +117,10 @@ export async function insertProfile(
       .single()
     if (error) {
       console.error('[Pritness] insertProfile error:', error.message)
-      return { data: null, error: new Error(error.message) }
+      const message = (error as { code?: string }).code === '23505'
+        ? 'Ese nombre de usuario ya está en uso. Elige otro.'
+        : error.message
+      return { data: null, error: new Error(message) }
     }
     console.debug('[Pritness] Perfil creado en Supabase:', (data as DbProfile).id)
     return { data: data as DbProfile, error: null }

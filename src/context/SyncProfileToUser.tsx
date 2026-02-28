@@ -3,14 +3,20 @@ import { useAuth } from './AuthContext'
 import { useUser } from './UserContext'
 import type { UserProfile } from './UserContext'
 
-/** Sincroniza profileFromDb (Supabase) con UserContext para que la app use un solo perfil */
+/** Sincroniza profileFromDb (Supabase) con UserContext. No borra el perfil en caché mientras se carga. */
 export function SyncProfileToUser() {
-  const { profileFromDb } = useAuth()
+  const { profileFromDb, profileLoading } = useAuth()
   const { setProfile } = useUser()
 
   useEffect(() => {
-    setProfile(profileFromDb as UserProfile | null)
-  }, [profileFromDb, setProfile])
+    if (profileFromDb !== null) {
+      setProfile(profileFromDb as UserProfile)
+      return
+    }
+    if (!profileLoading) {
+      setProfile(null)
+    }
+  }, [profileFromDb, profileLoading, setProfile])
 
   return null
 }

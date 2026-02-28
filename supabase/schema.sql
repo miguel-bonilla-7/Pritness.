@@ -4,7 +4,7 @@
 -- Optional: enum for goal (can use text instead)
 -- CREATE TYPE user_goal AS ENUM ('definir_masa', 'ganar_masa', 'perder_peso');
 
--- Profiles (extends auth.users via auth_id). username = login sin correo, único.
+-- Profiles (extends auth.users via auth_id). Solo username es único; nombre, edad, etc. pueden repetirse.
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   auth_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
