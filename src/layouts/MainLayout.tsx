@@ -29,7 +29,10 @@ export function MainLayout() {
       </main>
       <BottomNav />
       {isReloading && (
-        <div className="fixed inset-0 z-[60] bg-app/90 flex items-center justify-center">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center"
+          style={{ backgroundColor: 'var(--color-app)' }}
+        >
           <PageSpinner />
         </div>
       )}

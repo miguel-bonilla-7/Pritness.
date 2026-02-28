@@ -7,7 +7,7 @@ interface PullToRefreshProps {
   onRefresh: () => void
 }
 
-/** Franja en la parte superior: deslizar hacia abajo para recargar. Muestra spinner pequeño centrado. */
+/** Deslizar hacia abajo en la franja superior para recargar. No muestra pantalla tapada al deslizar; solo al recargar (MainLayout). */
 export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
   const [pullY, setPullY] = useState(0)
   const startYRef = useRef(0)
@@ -28,29 +28,13 @@ export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
   }, [pullY, onRefresh])
 
   return (
-    <>
-      <div
-        className="absolute left-0 right-0 top-0 h-14 z-40 flex items-center justify-center touch-none"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-        aria-hidden
-      />
-      {pullY > 0 && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-app transition-opacity duration-150"
-          style={{ opacity: Math.min(1, pullY / PULL_THRESHOLD) }}
-        >
-          <div className="relative w-4 h-4 flex items-center justify-center">
-            <div className="spinner spinner--xs" aria-hidden>
-              {Array.from({ length: 10 }, (_, i) => (
-                <div key={i} />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <div
+      className="absolute left-0 right-0 top-0 h-14 z-40 touch-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      aria-hidden
+    />
   )
 }

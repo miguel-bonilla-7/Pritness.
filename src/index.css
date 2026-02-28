@@ -10,12 +10,19 @@
 }
 
 html {
-  @apply bg-app text-white antialiased;
+  @apply text-white antialiased;
   font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--color-app);
 }
 
 body {
-  @apply min-h-screen bg-app;
+  @apply min-h-screen;
+  background-color: var(--color-app);
+}
+
+#root {
+  min-height: 100vh;
+  background-color: var(--color-app);
 }
 
 /* Spinner de recarga - From Uiverse.io by PriyanshuGupta28 (tamaño estándar ~24px) */
