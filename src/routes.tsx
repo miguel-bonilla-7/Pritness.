@@ -15,7 +15,7 @@ function RequireSession() {
 
   if (!configured) return <Navigate to="/login" replace />
   if (loading) {
-    return <PageSpinner message="Comprobando sesión..." />
+    return <PageSpinner />
   }
   if (!session) {
     console.debug('[Pritness Routes] Sin sesión, redirigiendo a /login')
@@ -30,7 +30,7 @@ function RedirectToApp() {
   const hasProfile = Boolean(profile ?? profileFromDb)
 
   if (profileLoading) {
-    return <PageSpinner message="Cargando perfil..." />
+    return <PageSpinner />
   }
   if (!hasProfile) return <Navigate to="/onboarding" replace />
   return <Navigate to="/dashboard" replace />
@@ -42,7 +42,7 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
   const hasProfile = Boolean(profile ?? profileFromDb)
 
   if (profileLoading) {
-    return <PageSpinner message="Cargando perfil..." />
+    return <PageSpinner />
   }
   if (!hasProfile) {
     console.debug('[Pritness Routes] Sin perfil, redirigiendo a /onboarding')

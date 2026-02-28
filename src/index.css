@@ -18,11 +18,25 @@ body {
   @apply min-h-screen bg-app;
 }
 
-/* Spinner de recarga - From Uiverse.io by PriyanshuGupta28 (adaptado tema Pritness) */
+/* Spinner de recarga - From Uiverse.io by PriyanshuGupta28 (tamaño estándar ~24px) */
 .spinner {
   position: absolute;
   width: 9px;
   height: 9px;
+  left: 50%;
+  top: 50%;
+  margin-left: -4.5px;
+  margin-top: -4.5px;
+}
+
+.spinner--sm {
+  transform: scale(2.67);
+  transform-origin: center center;
+}
+
+.spinner--xs {
+  transform: scale(1.2);
+  transform-origin: center center;
 }
 
 .spinner div {

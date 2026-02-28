@@ -146,7 +146,7 @@ export function AuthPage() {
   const handleSubmit = mode === 'login' ? handleLogin : handleRegister
 
   if (loading) {
-    return <PageSpinner message="Comprobando sesión..." />
+    return <PageSpinner />
   }
 
   if (session) {
