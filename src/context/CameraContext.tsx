@@ -26,7 +26,11 @@ export function CameraProvider({ children }: { children: ReactNode }) {
   const triggerCamera = useCallback(() => {
     setError('')
     setResult(null)
-    inputRef.current?.click()
+    const input = inputRef.current
+    if (input) {
+      input.value = ''
+      input.click()
+    }
   }, [])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

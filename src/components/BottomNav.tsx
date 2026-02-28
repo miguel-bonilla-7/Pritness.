@@ -23,7 +23,11 @@ export function BottomNav() {
               <button
                 key="camera"
                 type="button"
-                onClick={triggerCamera}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  triggerCamera()
+                }}
                 className="flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl transition-colors text-white flex-[0_0_64px] -mt-6"
                 aria-label="Abrir cámara"
               >
