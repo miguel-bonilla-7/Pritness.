@@ -1,9 +1,11 @@
 import { Outlet } from 'react-router-dom'
 import { BottomNav } from '../components/BottomNav'
 import { OfflineBanner } from '../components/OfflineBanner'
+import { CameraProvider } from '../context/CameraContext'
 
 export function MainLayout() {
   return (
+    <CameraProvider>
     <div className="min-h-screen bg-app flex flex-col">
       <OfflineBanner />
       <header className="bg-app border-b border-white/5 px-4 py-3 safe-top">
@@ -16,5 +18,6 @@ export function MainLayout() {
       </main>
       <BottomNav />
     </div>
+    </CameraProvider>
   )
 }

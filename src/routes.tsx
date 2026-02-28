@@ -4,7 +4,6 @@ import { AuthPage } from './pages/AuthPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { WODsPage } from './pages/WODsPage'
-import { CameraPage } from './pages/CameraPage'
 import { ChatPage } from './pages/ChatPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { useAuth } from './context/AuthContext'
@@ -74,7 +73,7 @@ function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="trends" element={<Navigate to="/wods" replace />} />
           <Route path="wods" element={<WODsPage />} />
-          <Route path="camera" element={<CameraPage />} />
+          <Route path="camera" element={<Navigate to="/dashboard" replace />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
