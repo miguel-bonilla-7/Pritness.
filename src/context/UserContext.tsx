@@ -25,8 +25,16 @@ interface UserContextValue {
 
 const UserContext = createContext<UserContextValue | null>(null)
 
+function loadProfileFromStorage(): UserProfile | null {
+  try {
+    const s = localStorage.getItem('pritness_profile')
+    if (s) return JSON.parse(s) as UserProfile
+  } catch {}
+  return null
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfileState] = useState<UserProfile | null>(null)
+  const [profile, setProfileState] = useState<UserProfile | null>(loadProfileFromStorage)
 
   const setProfile = useCallback((p: UserProfile | null) => {
     setProfileState(p)
