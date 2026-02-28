@@ -39,19 +39,16 @@ export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
       />
       {pullY > 0 && (
         <div
-          className="fixed left-0 right-0 top-16 z-50 flex flex-col items-center justify-center gap-1 py-2 bg-app/95 transition-opacity duration-150"
-          style={{ opacity: pullY / PULL_THRESHOLD }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-app transition-opacity duration-150"
+          style={{ opacity: Math.min(1, pullY / PULL_THRESHOLD) }}
         >
-          <div className="relative w-6 h-6 flex items-center justify-center">
-            <div className="spinner spinner--sm" aria-hidden>
+          <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="spinner spinner--xs" aria-hidden>
               {Array.from({ length: 10 }, (_, i) => (
                 <div key={i} />
               ))}
             </div>
           </div>
-          <span className="text-gray-500 text-xs">
-            {pullY >= PULL_THRESHOLD ? 'Suelta para recargar' : 'Desliza hacia abajo'}
-          </span>
         </div>
       )}
     </>
