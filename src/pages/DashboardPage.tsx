@@ -53,7 +53,7 @@ export function DashboardPage() {
   const weightDiff = weightKg - weightStartKg
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="p-4 space-y-5 overflow-auto min-h-0">
       {/* Tus metas diarias - arriba en la interfaz */}
       <Card className="border-orange-500/30 bg-gradient-to-b from-white/5 to-transparent">
         <div className="flex items-center gap-2 mb-3">

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Camera, UtensilsCrossed, Dumbbell, Loader2, Sparkles, ImagePlus } from 'lucide-react'
 import { useUser } from '../context/UserContext'
 import { useDailyLog } from '../context/DailyLogContext'
@@ -11,7 +11,6 @@ type Tab = 'meal' | 'wod'
 export function CameraPage() {
   const { profile } = useUser()
   const { addMeal, setBurned, addWod } = useDailyLog()
-  const [showSourceChoice, setShowSourceChoice] = useState(true)
   const [tab, setTab] = useState<Tab>('meal')
   const [mealResult, setMealResult] = useState<MealAnalysisResult | null>(null)
   const [wodResult, setWodResult] = useState<WODAnalysisResult | null>(null)
@@ -21,13 +20,20 @@ export function CameraPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+    if (isMobile && cameraInputRef.current) {
+      const t = setTimeout(() => cameraInputRef.current?.click(), 300)
+      return () => clearTimeout(t)
+    }
+  }, [])
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setError('')
     setMealResult(null)
     setWodResult(null)
-    setShowSourceChoice(false)
     setLoading(true)
     try {
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -97,7 +103,7 @@ export function CameraPage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 overflow-auto min-h-0">
       <input
         ref={cameraInputRef}
         type="file"
@@ -114,36 +120,6 @@ export function CameraPage() {
         className="hidden"
       />
 
-      {/* Al entrar: elegir cámara o galería sin otro menú */}
-      {showSourceChoice && (
-        <Card>
-          <p className="text-sm text-gray-400 mb-4 text-center">¿De dónde quieres la imagen?</p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => cameraInputRef.current?.click()}
-              disabled={loading}
-              className="flex-1 rounded-xl py-4 border-2 border-dashed border-white/20 text-gray-300 hover:border-orange-500 hover:text-orange-400 transition-colors flex flex-col items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}
-              <span className="text-sm font-medium">Tomar foto</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => galleryInputRef.current?.click()}
-              disabled={loading}
-              className="flex-1 rounded-xl py-4 border-2 border-dashed border-white/20 text-gray-300 hover:border-orange-500 hover:text-orange-400 transition-colors flex flex-col items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
-              <span className="text-sm font-medium">Galería</span>
-            </button>
-          </div>
-          {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
-        </Card>
-      )}
-
-      {!showSourceChoice && (
-        <>
       <div className="flex rounded-2xl bg-white/5 p-1">
         <button
           type="button"
@@ -176,16 +152,25 @@ export function CameraPage() {
           <Card>
             <p className="text-sm text-gray-400 mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-orange-400" />
-              Sube una foto: la IA detectará si es comida o ejercicio y la analizará.
+              Toma una foto o elige de galería: la IA detectará si es comida o ejercicio.
             </p>
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              disabled={loading}
+              className="w-full rounded-xl py-4 border-2 border-dashed border-white/20 text-gray-400 hover:border-orange-500 hover:text-orange-400 transition-colors flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
+              {loading ? 'Analizando...' : 'Tomar foto'}
+            </button>
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
               disabled={loading}
-              className="w-full rounded-xl py-4 border-2 border-dashed border-white/20 text-gray-400 hover:border-orange-500 hover:text-orange-400 transition-colors flex items-center justify-center gap-2"
+              className="mt-2 w-full rounded-xl py-2.5 text-sm text-gray-400 hover:text-orange-400 transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImagePlus className="w-6 h-6" />}
-              {loading ? 'Analizando...' : 'Elegir otra foto (comida o ejercicio)'}
+              <ImagePlus className="w-4 h-4" />
+              Elegir de galería
             </button>
           </Card>
 
@@ -272,8 +257,6 @@ export function CameraPage() {
             </Card>
           )}
         </>
-      )}
-      </>
       )}
     </div>
   )

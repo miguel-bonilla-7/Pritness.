@@ -107,8 +107,8 @@ export function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-4">
         {messages.map((m) => (
           <div
             key={m.id}
@@ -162,7 +162,7 @@ export function ChatPage() {
         )}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 safe-bottom">
+      <form onSubmit={handleSubmit} className="shrink-0 p-4 border-t border-white/10 safe-bottom bg-app">
         <div className="flex gap-2">
           <input
             type="text"

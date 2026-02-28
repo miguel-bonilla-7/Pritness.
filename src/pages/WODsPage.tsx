@@ -139,7 +139,7 @@ export function WODsPage() {
 
   if (wods.length === 0) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 overflow-auto min-h-0">
         <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
           <Dumbbell className="w-6 h-6 text-orange-400" />
           WODs
@@ -168,7 +168,7 @@ export function WODsPage() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 overflow-auto min-h-0">
       <h2 className="text-xl font-bold text-white flex items-center gap-2">
         <Dumbbell className="w-6 h-6 text-orange-400" />
         Registro de WODs

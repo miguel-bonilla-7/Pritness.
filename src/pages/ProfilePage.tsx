@@ -20,7 +20,7 @@ export function ProfilePage() {
   if (!profile) return null
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="p-4 space-y-5 overflow-auto min-h-0">
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
