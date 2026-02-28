@@ -170,6 +170,110 @@ export async function analyzeMealImage(imageDataUrl: string): Promise<MealAnalys
   }
 }
 
+export type SmartImageResult =
+  | { type: 'food'; meal: MealAnalysisResult }
+  | { type: 'workout'; wod: WODAnalysisResult }
+
+const SMART_IMAGE_PROMPT = `Look at this image. Decide: does it show FOOD/MEAL (plate, dish, food on table) or EXERCISE/WORKOUT (gym, whiteboard with exercises, person training, equipment, written WOD)?
+Reply with ONLY a valid JSON object, no markdown.
+If FOOD: {"type":"food","meal":{"calories":number,"protein":number,"carbs":number,"fat":number,"description":"string","items":[{"name":"string","calories":number,"protein":number}]}}
+If WORKOUT: {"type":"workout","wod":{"description":"string","exercises":["string"],"estimatedCaloriesBurned":number}}
+Use the exact keys above. Estimate reasonable values.`
+
+function parseSmartImageResponse(text: string): SmartImageResult {
+  const cleaned = text.replace(/^```json?\s*|\s*```$/g, '').trim()
+  const o = JSON.parse(cleaned) as { type: string; meal?: MealAnalysisResult; wod?: WODAnalysisResult }
+  if (o.type === 'workout' && o.wod) {
+    return { type: 'workout', wod: o.wod }
+  }
+  if (o.meal) {
+    return { type: 'food', meal: o.meal }
+  }
+  throw new Error('Respuesta no reconocida')
+}
+
+/** Detecta si la foto es comida o ejercicio y devuelve el análisis correspondiente */
+export async function analyzeImageSmart(imageDataUrl: string): Promise<SmartImageResult> {
+  if (GROQ_API_KEY) {
+    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_VISION_MODEL,
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: imageDataUrl } },
+              { type: 'text', text: SMART_IMAGE_PROMPT },
+            ],
+          },
+        ],
+      }),
+    })
+    if (!res.ok) throw new Error(`Groq: ${res.status}`)
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content?.trim() || '{}'
+    return parseSmartImageResponse(text)
+  }
+  if (import.meta.env.VITE_GEMINI_API_KEY) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+    const base64 = imageDataUrl.split(',')[1]
+    if (!base64) throw new Error('Invalid image data')
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+              { text: SMART_IMAGE_PROMPT },
+            ],
+          }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+        }),
+      }
+    )
+    if (!res.ok) throw new Error(`Gemini: ${res.status}`)
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '{}'
+    return parseSmartImageResponse(text)
+  }
+  if (import.meta.env.VITE_OPENAI_API_KEY) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: imageDataUrl } },
+              { type: 'text', text: SMART_IMAGE_PROMPT },
+            ],
+          },
+        ],
+      }),
+    })
+    if (!res.ok) throw new Error(`OpenAI: ${res.status}`)
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content?.trim() || '{}'
+    return parseSmartImageResponse(text)
+  }
+  throw new Error('Configura VITE_GROQ_API_KEY, VITE_GEMINI_API_KEY o VITE_OPENAI_API_KEY para análisis por foto')
+}
+
 const MEAL_TEXT_PROMPT = `El usuario describe en español lo que comió. Responde ÚNICAMENTE un JSON válido (sin markdown, sin código) con estas claves:
 - calories (número): calorías totales estimadas
 - protein (número): gramos de proteína

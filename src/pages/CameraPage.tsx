@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
-import { Camera, UtensilsCrossed, Dumbbell, Loader2 } from 'lucide-react'
+import { Camera, UtensilsCrossed, Dumbbell, Loader2, Sparkles } from 'lucide-react'
 import { useUser } from '../context/UserContext'
 import { useDailyLog } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
-import { analyzeMealImage, analyzeWOD, type MealAnalysisResult, type WODAnalysisResult } from '../lib/api'
+import { analyzeImageSmart, analyzeWOD, type MealAnalysisResult, type WODAnalysisResult } from '../lib/api'
 import { insertWod } from '../lib/supabase'
 
 type Tab = 'meal' | 'wod'
@@ -14,6 +14,7 @@ export function CameraPage() {
   const [tab, setTab] = useState<Tab>('meal')
   const [mealResult, setMealResult] = useState<MealAnalysisResult | null>(null)
   const [wodResult, setWodResult] = useState<WODAnalysisResult | null>(null)
+  const [smartResult, setSmartResult] = useState<'food' | 'workout' | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [wodInput, setWodInput] = useState('')
@@ -24,6 +25,8 @@ export function CameraPage() {
     if (!file) return
     setError('')
     setMealResult(null)
+    setWodResult(null)
+    setSmartResult(null)
     setLoading(true)
     try {
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -32,8 +35,16 @@ export function CameraPage() {
         r.onerror = reject
         r.readAsDataURL(file)
       })
-      const result = await analyzeMealImage(dataUrl)
-      setMealResult(result)
+      const result = await analyzeImageSmart(dataUrl)
+      if (result.type === 'food') {
+        setMealResult(result.meal)
+        setSmartResult('food')
+        setTab('meal')
+      } else {
+        setWodResult(result.wod)
+        setSmartResult('workout')
+        setTab('wod')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al analizar la imagen')
     } finally {
@@ -46,6 +57,7 @@ export function CameraPage() {
     if (mealResult) {
       addMeal(Math.round(mealResult.calories), Math.round(mealResult.protein || 0))
       setMealResult(null)
+      setSmartResult(null)
     }
   }
 
@@ -83,6 +95,7 @@ export function CameraPage() {
       }
       setWodResult(null)
       setWodInput('')
+      setSmartResult(null)
     }
   }
 
@@ -118,7 +131,10 @@ export function CameraPage() {
       {tab === 'meal' && (
         <>
           <Card>
-            <p className="text-sm text-gray-400 mb-3">Sube una foto de tu plato para estimar calorías y proteínas.</p>
+            <p className="text-sm text-gray-400 mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-orange-400" />
+              Sube una foto: la IA detectará si es comida o ejercicio y la analizará.
+            </p>
             <input
               ref={fileInputRef}
               type="file"
@@ -134,7 +150,7 @@ export function CameraPage() {
               className="w-full rounded-xl py-4 border-2 border-dashed border-white/20 text-gray-400 hover:border-orange-500 hover:text-orange-400 transition-colors flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
-              {loading ? 'Analizando...' : 'Elegir foto'}
+              {loading ? 'Analizando...' : 'Elegir foto (comida o ejercicio)'}
             </button>
           </Card>
 
