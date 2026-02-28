@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flame, Droplets, Scale } from 'lucide-react'
+import { Flame, Droplets, Scale, Target } from 'lucide-react'
 import { useUser } from '../context/UserContext'
 import { useDailyLog } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
@@ -53,6 +53,35 @@ export function DashboardPage() {
 
   return (
     <div className="p-4 space-y-5">
+      {/* Tus metas diarias - arriba en la interfaz */}
+      <Card className="border-orange-500/30 bg-gradient-to-b from-white/5 to-transparent">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-orange-400">
+            <Target className="w-5 h-5" />
+          </span>
+          <h2 className="font-bold text-white">Tus metas diarias</h2>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">Objetivos que debes alcanzar cada día (según tu peso, altura, edad y objetivo)</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-2xl font-bold text-white">{targetCal.toLocaleString()}</p>
+            <p className="text-xs text-gray-400">kcal</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-white">{profile.proteinTarget}</p>
+            <p className="text-xs text-gray-400">g proteína</p>
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-gray-300">{profile.carbsTarget}</p>
+            <p className="text-xs text-gray-400">g carbos</p>
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-gray-300">{profile.fatTarget}</p>
+            <p className="text-xs text-gray-400">g grasa</p>
+          </div>
+        </div>
+      </Card>
+
       {/* Calorie Tracker */}
       <Card>
         <div className="flex items-center justify-between mb-3">
@@ -66,6 +95,11 @@ export function DashboardPage() {
             +{eaten} <Flame className="w-3 h-3" />
           </span>
         </div>
+        <p className="text-xs text-gray-400 mb-2">
+          Meta: <span className="text-white font-medium">{targetCal.toLocaleString()} kcal</span>
+          {' · '}
+          <span className="text-white font-medium">{profile.proteinTarget} g</span> proteína
+        </p>
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
             <p className="text-xs text-gray-400">+ EATEN</p>

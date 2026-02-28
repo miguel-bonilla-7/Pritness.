@@ -1,14 +1,31 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader2 } from 'lucide-react'
-import { sendChatMessage } from '../lib/api'
+import { Send, Loader2, PlusCircle } from 'lucide-react'
+import { sendChatMessage, analyzeMealFromText, type MealAnalysisResult } from '../lib/api'
+import { useDailyLog } from '../context/DailyLogContext'
+import { useUser } from '../context/UserContext'
+import { insertMeal } from '../lib/supabase'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  /** When present, show meal estimate and "Register this meal" button */
+  mealData?: MealAnalysisResult | null
+  /** True after user clicked Register this meal */
+  mealRegistered?: boolean
+}
+
+function getMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
+  const h = new Date().getHours()
+  if (h < 11) return 'breakfast'
+  if (h < 15) return 'lunch'
+  if (h < 21) return 'dinner'
+  return 'snack'
 }
 
 export function ChatPage() {
+  const { addMeal } = useDailyLog()
+  const { profile } = useUser()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -36,10 +53,20 @@ export function ChatPage() {
 
     try {
       const history = messages.map((m) => ({ role: m.role, content: m.content }))
-      const reply = await sendChatMessage(text, history)
+      const [reply, mealResult] = await Promise.all([
+        sendChatMessage(text, history),
+        analyzeMealFromText(text),
+      ])
+      const hasMeal = mealResult && (mealResult.calories > 0 || (mealResult.description && mealResult.description !== 'Configura VITE_GROQ_API_KEY'))
       setMessages((prev) => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: reply },
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: reply,
+          mealData: hasMeal ? mealResult : null,
+          mealRegistered: false,
+        },
       ])
     } catch (err) {
       setMessages((prev) => [
@@ -53,6 +80,30 @@ export function ChatPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRegisterMeal = async (messageId: string) => {
+    const msg = messages.find((m) => m.id === messageId)
+    if (!msg?.mealData || msg.mealRegistered) return
+    const r = msg.mealData
+    const cal = Math.round(r.calories || 0)
+    const prot = Math.round(r.protein || 0)
+    addMeal(cal, prot)
+    if (profile?.id) {
+      const mealType = getMealType()
+      await insertMeal(profile.id, {
+        meal_type: mealType,
+        name: r.description || 'Comida',
+        calories: cal,
+        protein: prot,
+        carbs: r.carbs,
+        fat: r.fat,
+        source: 'ai_vision',
+      })
+    }
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, mealRegistered: true } : m))
+    )
   }
 
   return (
@@ -71,6 +122,33 @@ export function ChatPage() {
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+              {m.role === 'assistant' && m.mealData && (
+                <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                  <p className="text-xs text-gray-400">{m.mealData.description}</p>
+                  <div className="flex gap-4">
+                    <div>
+                      <p className="text-xl font-bold text-white">{Math.round(m.mealData.calories || 0)}</p>
+                      <p className="text-xs text-gray-400">kcal</p>
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-white">{Math.round(m.mealData.protein || 0)}</p>
+                      <p className="text-xs text-gray-400">proteína (g)</p>
+                    </div>
+                  </div>
+                  {m.mealRegistered ? (
+                    <p className="text-xs text-green-400 font-medium">✓ Registrada en tu día</p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleRegisterMeal(m.id)}
+                      className="w-full rounded-xl py-2 bg-white/15 text-white font-medium hover:bg-white/20 flex items-center justify-center gap-2 text-sm"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      Registrar esta comida
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -90,7 +168,7 @@ export function ChatPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribe tu pregunta..."
+            placeholder="Escribe lo que comiste o pregunta sobre dieta..."
             className="flex-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
             disabled={loading}
           />
