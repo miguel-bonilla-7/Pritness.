@@ -208,6 +208,48 @@ export async function insertMeal(
   }
 }
 
+/** Inserta un WOD en Supabase */
+export async function insertWod(
+  profileId: string,
+  wod: { date: string; description: string; calories_burned: number; source?: 'photo' | 'voice' | 'text' }
+): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: null }
+  try {
+    const { error } = await supabase.from('wods').insert({
+      user_id: profileId,
+      date: wod.date,
+      description: wod.description,
+      calories_burned: wod.calories_burned,
+      source: wod.source ?? 'text',
+    })
+    if (error) {
+      console.error('[Pritness] insertWod error:', error.message)
+      return { error: new Error(error.message) }
+    }
+    return { error: null }
+  } catch (err) {
+    console.error('[Pritness] insertWod exception:', err)
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
+/** Lista WODs del usuario desde Supabase (opcional) */
+export async function fetchWods(profileId: string, limit = 50): Promise<{ date: string; description: string | null; calories_burned: number | null }[]> {
+  if (!isConfigured) return []
+  try {
+    const { data, error } = await supabase
+      .from('wods')
+      .select('date, description, calories_burned')
+      .eq('user_id', profileId)
+      .order('date', { ascending: false })
+      .limit(limit)
+    if (error) return []
+    return (data ?? []) as { date: string; description: string | null; calories_burned: number | null }[]
+  } catch {
+    return []
+  }
+}
+
 /** Mapea fila de Supabase al tipo UserProfile de la app */
 export function mapDbProfileToUserProfile(db: DbProfile): {
   id: string

@@ -4,12 +4,13 @@ import { useUser } from '../context/UserContext'
 import { useDailyLog } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
 import { analyzeMealImage, analyzeWOD, type MealAnalysisResult, type WODAnalysisResult } from '../lib/api'
+import { insertWod } from '../lib/supabase'
 
 type Tab = 'meal' | 'wod'
 
 export function CameraPage() {
   const { profile } = useUser()
-  const { addMeal, setBurned } = useDailyLog()
+  const { addMeal, setBurned, addWod } = useDailyLog()
   const [tab, setTab] = useState<Tab>('meal')
   const [mealResult, setMealResult] = useState<MealAnalysisResult | null>(null)
   const [wodResult, setWodResult] = useState<WODAnalysisResult | null>(null)
@@ -66,6 +67,20 @@ export function CameraPage() {
   const handleAddWODCalories = () => {
     if (wodResult) {
       setBurned((prev) => prev + wodResult.estimatedCaloriesBurned)
+      addWod({
+        description: wodResult.description,
+        exercises: wodResult.exercises ?? [],
+        estimatedCaloriesBurned: wodResult.estimatedCaloriesBurned,
+      })
+      if (profile?.id) {
+        const today = new Date().toISOString().slice(0, 10)
+        insertWod(profile.id, {
+          date: today,
+          description: wodResult.description,
+          calories_burned: wodResult.estimatedCaloriesBurned,
+          source: 'text',
+        })
+      }
       setWodResult(null)
       setWodInput('')
     }

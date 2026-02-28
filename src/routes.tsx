@@ -3,7 +3,7 @@ import { MainLayout } from './layouts/MainLayout'
 import { AuthPage } from './pages/AuthPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { TrendsPage } from './pages/TrendsPage'
+import { WODsPage } from './pages/WODsPage'
 import { CameraPage } from './pages/CameraPage'
 import { ChatPage } from './pages/ChatPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -72,7 +72,8 @@ function AppRoutes() {
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route element={<RequireProfile><MainLayout /></RequireProfile>}>
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="trends" element={<TrendsPage />} />
+          <Route path="trends" element={<Navigate to="/wods" replace />} />
+          <Route path="wods" element={<WODsPage />} />
           <Route path="camera" element={<CameraPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="profile" element={<ProfilePage />} />
