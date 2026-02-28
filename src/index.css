@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-app: #000000;
+  --color-card: #121212;
+}
+
+html {
+  @apply bg-app text-white antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  @apply min-h-screen bg-app;
+}

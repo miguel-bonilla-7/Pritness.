@@ -1,0 +1,43 @@
+import { LayoutDashboard, TrendingUp, Camera, MessageCircle, User } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+
+const navItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/trends', icon: TrendingUp, label: 'Trends' },
+  { to: '/camera', icon: Camera, label: 'Cámara', central: true },
+  { to: '/chat', icon: MessageCircle, label: 'Chat' },
+  { to: '/profile', icon: User, label: 'Perfil' },
+]
+
+export function BottomNav() {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-card-glow safe-bottom z-50">
+      <div className="flex items-center justify-around h-16 px-2">
+        {navItems.map(({ to, icon: Icon, label, central }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center gap-0.5 min-w-[56px] py-2 rounded-xl transition-colors ${
+                central
+                  ? 'flex-[0_0_64px] -mt-6'
+                  : isActive
+                    ? 'text-white'
+                    : 'text-gray-500 hover:text-gray-300'
+              }`
+            }
+          >
+            {central ? (
+              <span className="flex items-center justify-center w-14 h-14 rounded-full bg-white text-black shadow-lg">
+                <Icon className="w-7 h-7" />
+              </span>
+            ) : (
+              <Icon className="w-6 h-6" />
+            )}
+            <span className="text-[10px] font-medium">{label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </nav>
+  )
+}
