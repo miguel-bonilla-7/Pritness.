@@ -43,7 +43,7 @@ export function CameraPage() {
 
   const handleAddMealToLog = () => {
     if (mealResult) {
-      addMeal(Math.round(mealResult.calories))
+      addMeal(Math.round(mealResult.calories), Math.round(mealResult.protein || 0))
       setMealResult(null)
     }
   }

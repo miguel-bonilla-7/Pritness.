@@ -98,7 +98,8 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-app p-4 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-app overflow-y-auto">
+      <div className="p-4 py-6 flex flex-col items-center justify-center min-h-full">
       <div className="w-full max-w-md space-y-6">
         <h1 className="text-2xl font-bold text-white text-center">Pritness</h1>
         <p className="text-gray-400 text-center text-sm">Crea tu perfil para empezar</p>

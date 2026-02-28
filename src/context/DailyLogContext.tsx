@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 interface DailyTotals {
   eaten: number
   burned: number
+  proteinEaten: number
   waterMl: number
   weightKg: number
   weightStartKg: number
@@ -23,6 +24,7 @@ const STORAGE_KEY = 'pritness_daily_totals'
 const defaultTotals: DailyTotals = {
   eaten: 0,
   burned: 0,
+  proteinEaten: 0,
   waterMl: 0,
   weightKg: 0,
   weightStartKg: 0,
@@ -91,9 +93,13 @@ export function DailyLogProvider({ children }: { children: ReactNode }) {
     []
   )
 
-  const addMeal = useCallback((calories: number) => {
+  const addMeal = useCallback((calories: number, protein?: number) => {
     setTotals((t) => {
-      const out = { ...t, eaten: t.eaten + calories }
+      const out = {
+        ...t,
+        eaten: t.eaten + calories,
+        proteinEaten: t.proteinEaten + (protein ?? 0),
+      }
       saveTotals(out)
       return out
     })

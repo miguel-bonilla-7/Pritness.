@@ -26,6 +26,7 @@ export function DashboardPage() {
   const {
     eaten,
     burned,
+    proteinEaten,
     waterMl,
     weightKg,
     weightStartKg,
@@ -91,27 +92,33 @@ export function DashboardPage() {
             </span>
             <h2 className="font-bold text-white">Calorie Tracker</h2>
           </div>
-          <span className="text-xs text-gray-400 flex items-center gap-0.5">
-            +{eaten} <Flame className="w-3 h-3" />
-          </span>
         </div>
-        <p className="text-xs text-gray-400 mb-2">
+        <p className="text-xs text-gray-400 mb-3">
           Meta: <span className="text-white font-medium">{targetCal.toLocaleString()} kcal</span>
           {' · '}
           <span className="text-white font-medium">{profile.proteinTarget} g</span> proteína
         </p>
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div>
-            <p className="text-xs text-gray-400">+ EATEN</p>
-            <p className="text-xl font-bold text-white">{eaten.toLocaleString()}</p>
+            <p className="text-xs text-gray-400">Calorías consumidas</p>
+            <p className="text-xl font-bold text-white">+{eaten.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-400">- BURNED</p>
-            <p className="text-xl font-bold text-white">{burned}</p>
+            <p className="text-xs text-gray-400">Calorías quemadas</p>
+            <p className="text-xl font-bold text-white">-{burned}</p>
           </div>
         </div>
         <ProgressBar value={eaten - burned} max={targetCal} type="calories" />
-        <p className="text-xs text-gray-400 mt-2">Remaining {remaining.toLocaleString()} kcal</p>
+        <p className="text-xs text-gray-400 mt-2">Restantes {remaining.toLocaleString()} kcal</p>
+
+        <div className="mt-4 pt-3 border-t border-white/10">
+          <p className="text-xs text-gray-400 mb-1">Proteína consumida</p>
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-xl font-bold text-white">{proteinEaten} <span className="text-sm font-normal text-gray-400">/ {profile.proteinTarget} g</span></p>
+          </div>
+          <ProgressBar value={proteinEaten} max={Math.max(profile.proteinTarget, 1)} type="protein" className="mt-1" />
+        </div>
+
         <button
           type="button"
           onClick={() => setShowLogMeal(true)}
