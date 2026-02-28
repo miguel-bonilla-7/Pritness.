@@ -11,7 +11,12 @@ if (isConfigured) {
   console.warn('[Pritness] Supabase NO configurada. Añade VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    ...(typeof window !== 'undefined' && { storage: window.localStorage }),
+  },
+})
 
 /** Comprueba conexión a Supabase y deja mensajes en consola */
 export async function checkSupabaseConnection(): Promise<boolean> {

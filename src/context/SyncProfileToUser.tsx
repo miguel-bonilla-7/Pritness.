@@ -6,15 +6,16 @@ import type { UserProfile } from './UserContext'
 /**
  * Sincroniza profileFromDb (Supabase) con UserContext.
  * - Si hay sesión y hay perfil en BD → actualizar perfil en contexto.
- * - Si NO hay sesión (logout) → borrar perfil.
- * - Si hay sesión pero la BD no devuelve perfil → NO borrar; mantener el perfil en caché (localStorage)
- *   para no mandar al usuario a onboarding cada vez que salga y vuelva.
+ * - Solo borrar perfil cuando la comprobación de sesión ha terminado Y no hay sesión (logout).
+ *   Así no se borra el perfil al refrescar la página mientras getSession() aún no ha respondido.
+ * - Si hay sesión pero la BD no devuelve perfil → mantener perfil en caché (localStorage).
  */
 export function SyncProfileToUser() {
-  const { session, profileFromDb, profileLoading } = useAuth()
+  const { session, profileFromDb, loading } = useAuth()
   const { setProfile } = useUser()
 
   useEffect(() => {
+    if (loading) return
     if (!session) {
       setProfile(null)
       return
@@ -22,9 +23,7 @@ export function SyncProfileToUser() {
     if (profileFromDb !== null) {
       setProfile(profileFromDb as UserProfile)
     }
-    // Si hay sesión y profileFromDb es null (BD sin perfil o error): no hacer setProfile(null),
-    // así se mantiene el perfil cargado desde localStorage y no rebota a onboarding.
-  }, [session, profileFromDb, profileLoading, setProfile])
+  }, [loading, session, profileFromDb, setProfile])
 
   return null
 }
