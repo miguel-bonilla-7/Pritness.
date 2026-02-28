@@ -8,17 +8,14 @@ import { ChatPage } from './pages/ChatPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { useAuth } from './context/AuthContext'
 import { useUser } from './context/UserContext'
+import { PageSpinner } from './components/PageSpinner'
 
 function RequireSession() {
   const { session, loading, configured } = useAuth()
 
   if (!configured) return <Navigate to="/login" replace />
   if (loading) {
-    return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <p className="text-gray-400">Comprobando sesión...</p>
-      </div>
-    )
+    return <PageSpinner message="Comprobando sesión..." />
   }
   if (!session) {
     console.debug('[Pritness Routes] Sin sesión, redirigiendo a /login')
@@ -33,11 +30,7 @@ function RedirectToApp() {
   const hasProfile = Boolean(profile ?? profileFromDb)
 
   if (profileLoading) {
-    return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <p className="text-gray-400">Cargando perfil...</p>
-      </div>
-    )
+    return <PageSpinner message="Cargando perfil..." />
   }
   if (!hasProfile) return <Navigate to="/onboarding" replace />
   return <Navigate to="/dashboard" replace />
@@ -49,11 +42,7 @@ function RequireProfile({ children }: { children: React.ReactNode }) {
   const hasProfile = Boolean(profile ?? profileFromDb)
 
   if (profileLoading) {
-    return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <p className="text-gray-400">Cargando perfil...</p>
-      </div>
-    )
+    return <PageSpinner message="Cargando perfil..." />
   }
   if (!hasProfile) {
     console.debug('[Pritness Routes] Sin perfil, redirigiendo a /onboarding')

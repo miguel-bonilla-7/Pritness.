@@ -4,6 +4,7 @@ import { LogIn, UserPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useUser, type Goal, type UserProfile } from '../context/UserContext'
 import { Card } from '../components/Card'
+import { PageSpinner } from '../components/PageSpinner'
 import { supabase, insertProfile } from '../lib/supabase'
 import { calculateTMB, getTargetsFromGoal } from '../lib/tmb'
 
@@ -145,11 +146,7 @@ export function AuthPage() {
   const handleSubmit = mode === 'login' ? handleLogin : handleRegister
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <p className="text-gray-400">Comprobando sesión...</p>
-      </div>
-    )
+    return <PageSpinner message="Comprobando sesión..." />
   }
 
   if (session) {
