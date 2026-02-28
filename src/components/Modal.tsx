@@ -22,12 +22,12 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 
   const modal = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{
-        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
-        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
-        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right))',
       }}
     >
       <div
@@ -35,7 +35,9 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative flex flex-col bg-card rounded-3xl w-full max-w-md max-h-[80vh] sm:max-h-[85vh] shadow-card-glow overflow-hidden">
+      <div
+        className="absolute left-1/2 top-1/2 w-full max-w-md max-h-[80vh] sm:max-h-[85vh] -translate-x-1/2 -translate-y-1/2 flex flex-col bg-card rounded-3xl shadow-card-glow overflow-hidden"
+      >
         <div className="shrink-0 bg-card border-b border-white/10 px-4 py-3 flex items-center justify-between rounded-t-3xl">
           <h3 className="font-bold text-white">{title}</h3>
           <button
