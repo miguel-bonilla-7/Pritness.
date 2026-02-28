@@ -1,4 +1,5 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   open: boolean
@@ -8,30 +9,50 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children }: ModalProps) {
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
   if (!open) return null
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+
+  const modal = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+      }}
+    >
       <div
         className="absolute inset-0 bg-black/70"
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative flex flex-col bg-card rounded-3xl w-full max-w-md max-h-[85vh] shadow-card-glow">
-        <div className="shrink-0 sticky top-0 z-10 bg-card border-b border-white/10 px-4 py-3 flex items-center justify-between rounded-t-3xl">
+      <div className="relative flex flex-col bg-card rounded-3xl w-full max-w-md max-h-[80vh] sm:max-h-[85vh] shadow-card-glow overflow-hidden">
+        <div className="shrink-0 bg-card border-b border-white/10 px-4 py-3 flex items-center justify-between rounded-t-3xl">
           <h3 className="font-bold text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white p-1 text-2xl leading-none"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-gray-400 hover:text-white text-2xl leading-none touch-manipulation"
             aria-label="Cerrar"
           >
             ×
           </button>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 -webkit-overflow-scrolling-touch">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }
