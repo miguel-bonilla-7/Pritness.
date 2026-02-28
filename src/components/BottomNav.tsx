@@ -11,7 +11,7 @@ const navItems = [
 
 export function BottomNav() {
   return (
-    <nav className="fixed left-0 right-0 bg-card rounded-t-3xl shadow-card-glow z-50 bottom-4 pb-safe"
+    <nav className="fixed left-0 right-0 bottom-0 bg-card rounded-t-3xl shadow-card-glow z-50 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map(({ to, icon: Icon, label, central }) => (
