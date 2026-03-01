@@ -31,14 +31,19 @@ function Field({ icon, label, ...props }: { icon: React.ReactNode; label: string
   )
 }
 
-/* Animated aurora blob */
+/* Animated aurora blob — uses transform only for GPU compositing */
 function Blob({ color, size, x, y, duration, delay = 0, opacity = 0.6, blur }: {
   color: string; size: number; x: number[]; y: number[]; duration: number; delay?: number; opacity?: number; blur?: number
 }) {
   return (
     <motion.div
       className="absolute rounded-full pointer-events-none"
-      style={{ width: size, height: size, background: color, filter: `blur(${blur ?? size * 0.38}px)`, opacity }}
+      style={{
+        width: size, height: size, background: color,
+        filter: `blur(${blur ?? size * 0.32}px)`,
+        opacity,
+        willChange: 'transform',
+      }}
       animate={{ x, y }}
       transition={{ duration, delay, repeat: Infinity, repeatType: 'loop', ease: 'linear' }}
     />

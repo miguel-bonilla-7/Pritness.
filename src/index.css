@@ -13,16 +13,30 @@ html {
   @apply text-white antialiased;
   font-family: 'Inter', system-ui, sans-serif;
   background-color: var(--color-app);
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
   @apply min-h-screen;
   background-color: var(--color-app);
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 #root {
   min-height: 100vh;
   background-color: var(--color-app);
+  overflow: hidden;
+}
+
+/* Ocultar scrollbar en toda la app (mantiene el scroll) */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
 }
 
 /* Spinner de recarga - From Uiverse.io by PriyanshuGupta28 (tamaño estándar ~24px) */

@@ -4,7 +4,10 @@ import {
   insertWod as supabaseInsertWod,
   fetchTodayWaterMl,
   fetchTodayMealTotals,
+  fetchTodayMeals,
   fetchAllWods,
+  deleteMeal as supabaseDeleteMeal,
+  deleteWod as supabaseDeleteWod,
   isSupabaseConfigured,
 } from '../lib/supabase'
 
@@ -13,6 +16,19 @@ interface DailyTotals {
   burned: number
   proteinEaten: number
   waterMl: number
+}
+
+export interface MealEntry {
+  id: string
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  meal_type: string
+  date: string
+  userInput?: string
+  items?: { name: string; calories: number; protein: number; carbs?: number; fat?: number; portion?: string }[]
 }
 
 export interface WodEntry {
@@ -24,14 +40,19 @@ export interface WodEntry {
 }
 
 interface DailyLogContextValue extends DailyTotals {
+  meals: MealEntry[]
   wods: WodEntry[]
   syncing: boolean
   setEaten: (v: number | ((prev: number) => number)) => void
   setBurned: (v: number | ((prev: number) => number)) => void
   setWaterMl: (v: number | ((prev: number) => number)) => void
   addMeal: (calories: number, protein?: number) => void
+  addMealEntry: (entry: MealEntry) => void
+  updateMeal: (id: string, updated: MealEntry) => void
+  removeMeal: (id: string) => void
   addWater: (ml: number) => void
   addWod: (entry: Omit<WodEntry, 'id' | 'date'>) => void
+  removeWod: (id: string) => void
   /** Called when a profile loads – fetches today's data from Supabase */
   syncFromDb: (profileId: string) => Promise<void>
   /** Pass profileId so writes go to Supabase */
@@ -66,6 +87,7 @@ export function DailyLogProvider({ children }: { children: ReactNode }) {
   const [totals, setTotals] = useState<DailyTotals>(
     isSupabaseConfigured ? defaultTotals : lsLoadTotals
   )
+  const [meals, setMeals] = useState<MealEntry[]>([])
   const [wods, setWods] = useState<WodEntry[]>(lsLoadWods)
   const [syncing, setSyncing] = useState(false)
   const profileIdRef = useRef<string | null>(null)
@@ -79,18 +101,30 @@ export function DailyLogProvider({ children }: { children: ReactNode }) {
     profileIdRef.current = profileId
     setSyncing(true)
     try {
-      const [meals, waterMl, dbWods] = await Promise.all([
+      const [mealTotals, mealRows, waterMl, dbWods] = await Promise.all([
         fetchTodayMealTotals(profileId),
+        fetchTodayMeals(profileId),
         fetchTodayWaterMl(profileId),
         fetchAllWods(profileId),
       ])
 
       setTotals({
-        eaten: meals.calories,
+        eaten: mealTotals.calories,
         burned: 0,
-        proteinEaten: meals.protein,
+        proteinEaten: mealTotals.protein,
         waterMl,
       })
+
+      setMeals(mealRows.map(r => ({
+        id: r.id,
+        name: r.name,
+        calories: r.calories,
+        protein: r.protein,
+        carbs: r.carbs,
+        fat: r.fat,
+        meal_type: r.meal_type,
+        date: r.date,
+      })))
 
       // Map DB wod rows to WodEntry shape
       const mapped: WodEntry[] = dbWods.map((w) => ({
@@ -132,7 +166,54 @@ export function DailyLogProvider({ children }: { children: ReactNode }) {
       eaten: t.eaten + calories,
       proteinEaten: t.proteinEaten + (protein ?? 0),
     }))
-    // Meal inserts to Supabase happen in the page that calls insertMeal directly
+  }, [])
+
+  const addMealEntry = useCallback((entry: MealEntry) => {
+    setMeals((prev) => [entry, ...prev])
+    setTotals((t) => ({
+      ...t,
+      eaten: t.eaten + entry.calories,
+      proteinEaten: t.proteinEaten + entry.protein,
+    }))
+  }, [])
+
+  const updateMeal = useCallback((id: string, updated: MealEntry) => {
+    setMeals((prev) => {
+      const found = prev.find(m => m.id === id)
+      if (!found) return prev
+      setTotals((t) => ({
+        ...t,
+        eaten: Math.max(0, t.eaten - found.calories + updated.calories),
+        proteinEaten: Math.max(0, t.proteinEaten - found.protein + updated.protein),
+      }))
+      return prev.map(m => (m.id === id ? updated : m))
+    })
+  }, [])
+
+  const removeMeal = useCallback((id: string) => {
+    setMeals((prev) => {
+      const found = prev.find(m => m.id === id)
+      if (found) {
+        setTotals((t) => ({
+          ...t,
+          eaten: Math.max(0, t.eaten - found.calories),
+          proteinEaten: Math.max(0, t.proteinEaten - found.protein),
+        }))
+      }
+      return prev.filter(m => m.id !== id)
+    })
+    supabaseDeleteMeal(id).catch(e => console.error('[DailyLog] deleteMeal failed:', e))
+  }, [])
+
+  const removeWod = useCallback((id: string) => {
+    setWods((prev) => {
+      const found = prev.find(w => w.id === id)
+      if (found) {
+        setBurned((prev) => Math.max(0, prev - found.estimatedCaloriesBurned))
+      }
+      return prev.filter(w => w.id !== id)
+    })
+    supabaseDeleteWod(id).catch(e => console.error('[DailyLog] deleteWod failed:', e))
   }, [])
 
   const addWater = useCallback((ml: number) => {
@@ -169,14 +250,19 @@ export function DailyLogProvider({ children }: { children: ReactNode }) {
 
   const value: DailyLogContextValue = {
     ...totals,
+    meals,
     wods,
     syncing,
     setEaten,
     setBurned,
     setWaterMl,
     addMeal,
+    addMealEntry,
+    updateMeal,
+    removeMeal,
     addWater,
     addWod,
+    removeWod,
     syncFromDb,
     setProfileId,
   }

@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useUser } from '../context/UserContext'
-import { useDailyLog } from '../context/DailyLogContext'
+import { useDailyLog, type MealEntry } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
 import { ProgressArc } from '../components/ProgressArc'
 import { MenuRecommender } from '../components/MenuRecommender'
 import { LogMealModal } from '../components/LogMealModal'
 import { LogDrinkModal } from '../components/LogDrinkModal'
+import { SwipeToDelete } from '../components/SwipeToDelete'
+import { MealDetailSheet, getMealIconNode } from '../components/MealDetailSheet'
 
 const WATER_TARGET_ML = 2000
 
@@ -18,18 +19,19 @@ function getBmiCategory(bmi: number): { label: string; position: number } {
   return { label: 'Obese', position: 88 }
 }
 
+const MEAL_TYPE_LABEL: Record<string, string> = {
+  breakfast: 'Desayuno',
+  lunch: 'Almuerzo',
+  dinner: 'Cena',
+  snack: 'Snack',
+}
+
 export function DashboardPage() {
-  const navigate = useNavigate()
   const { profile } = useUser()
-  const { eaten, burned, proteinEaten, waterMl } = useDailyLog()
+  const { eaten, burned, proteinEaten, waterMl, meals, removeMeal } = useDailyLog()
   const [showLogMeal, setShowLogMeal] = useState(false)
   const [showLogDrink, setShowLogDrink] = useState(false)
-
-  useEffect(() => {
-    if (!profile) {
-      navigate('/onboarding', { replace: true })
-    }
-  }, [profile, navigate])
+  const [selectedMeal, setSelectedMeal] = useState<MealEntry | null>(null)
 
   if (!profile) return null
 
@@ -44,7 +46,7 @@ export function DashboardPage() {
   const firstName = profile.name.split(/\s+/)[0]
 
   return (
-    <div className="p-4 space-y-4 overflow-auto min-h-0">
+    <div className="p-4 space-y-4 overflow-auto min-h-0 overscroll-contain">
 
       {/* ── Hero section ───────────────────────────────────────────── */}
       <motion.div
@@ -169,8 +171,71 @@ export function DashboardPage() {
         </div>
       </Card>
 
+      {/* ── Qué comiste hoy ─────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex items-baseline justify-between px-0.5">
+          <p className="text-sm font-semibold text-white">Qué comiste hoy</p>
+          {meals.length > 0 && (
+            <p className="text-[10px] text-white/25 uppercase tracking-widest">desliza para eliminar</p>
+          )}
+        </div>
+
+        {meals.length === 0 ? (
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] px-4 py-6 text-center">
+            <p className="text-white/25 text-sm">Aún no has registrado comidas hoy</p>
+          </div>
+        ) : (
+          <AnimatePresence initial={false}>
+            {meals.map((meal) => {
+              const { icon, gradient } = getMealIconNode(meal.name)
+              return (
+                <motion.div
+                  key={meal.id}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <SwipeToDelete onDelete={() => removeMeal(meal.id)} onTap={() => setSelectedMeal(meal)}>
+                    <div className="w-full bg-[#111111] border border-white/[0.07] rounded-2xl px-4 py-3.5 flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})` }}
+                      >
+                        {icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{meal.name}</p>
+                        <p className="text-[10px] text-white/30 mt-0.5 uppercase tracking-widest">
+                          {MEAL_TYPE_LABEL[meal.meal_type] ?? meal.meal_type}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="text-sm font-light text-white tabular-nums">{meal.calories}</p>
+                          <p className="text-[9px] text-white/30 uppercase tracking-widest">kcal</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-light text-white tabular-nums">{meal.protein}g</p>
+                          <p className="text-[9px] text-white/30 uppercase tracking-widest">prot</p>
+                        </div>
+                      </div>
+                    </div>
+                  </SwipeToDelete>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
+        )}
+      </div>
+
       <LogMealModal open={showLogMeal} onClose={() => setShowLogMeal(false)} />
       <LogDrinkModal open={showLogDrink} onClose={() => setShowLogDrink(false)} />
+      <MealDetailSheet
+        meal={selectedMeal}
+        onClose={() => setSelectedMeal(null)}
+        onUpdated={(updated) => setSelectedMeal(updated)}
+      />
     </div>
   )
 }

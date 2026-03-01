@@ -373,6 +373,57 @@ export async function insertWeightLog(
   }
 }
 
+/** Obtiene las comidas individuales de hoy */
+export async function fetchTodayMeals(profileId: string): Promise<{
+  id: string
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  meal_type: string
+  date: string
+}[]> {
+  if (!isConfigured) return []
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const { data, error } = await supabase
+      .from('meals')
+      .select('id, name, calories, protein, carbs, fat, meal_type, date')
+      .eq('user_id', profileId)
+      .eq('date', today)
+      .order('created_at', { ascending: false })
+    if (error) return []
+    return (data ?? []) as { id: string; name: string; calories: number; protein: number; carbs: number; fat: number; meal_type: string; date: string }[]
+  } catch {
+    return []
+  }
+}
+
+/** Elimina una comida por id */
+export async function deleteMeal(mealId: string): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: null }
+  try {
+    const { error } = await supabase.from('meals').delete().eq('id', mealId)
+    if (error) return { error: new Error(error.message) }
+    return { error: null }
+  } catch (err) {
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
+/** Elimina un WOD por id */
+export async function deleteWod(wodId: string): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: null }
+  try {
+    const { error } = await supabase.from('wods').delete().eq('id', wodId)
+    if (error) return { error: new Error(error.message) }
+    return { error: null }
+  } catch (err) {
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
 /** Mapea fila de Supabase al tipo UserProfile de la app */
 export function mapDbProfileToUserProfile(db: DbProfile): {
   id: string

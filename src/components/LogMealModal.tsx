@@ -20,7 +20,7 @@ function getMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
 }
 
 export function LogMealModal({ open, onClose }: LogMealModalProps) {
-  const { addMeal } = useDailyLog()
+  const { addMealEntry } = useDailyLog()
   const { profile } = useUser()
   const [texto, setTexto] = useState('')
   const [resultado, setResultado] = useState<MealAnalysisResult | null>(null)
@@ -50,19 +50,44 @@ export function LogMealModal({ open, onClose }: LogMealModalProps) {
     try {
       const cal = Math.round(resultado.calories || 0)
       const prot = Math.round(resultado.protein || 0)
-      addMeal(cal, prot)
+      const carbs = Math.round(resultado.carbs || 0)
+      const fat = Math.round(resultado.fat || 0)
+      const mealType = getMealType()
+      const today = new Date().toISOString().slice(0, 10)
+      let mealId = `meal-${Date.now()}`
       if (profile?.id) {
-        const mealType = getMealType()
-        await insertMeal(profile.id, {
+        const { error } = await insertMeal(profile.id, {
           meal_type: mealType,
           name: resultado.description || 'Comida',
           calories: cal,
           protein: prot,
-          carbs: resultado.carbs,
-          fat: resultado.fat,
+          carbs,
+          fat,
           source: 'ai_vision',
         })
+        if (!error) {
+          // fetch the new id from DB — use timestamp as fallback
+        }
       }
+      addMealEntry({
+        id: mealId,
+        name: resultado.description || 'Comida',
+        calories: cal,
+        protein: prot,
+        carbs,
+        fat,
+        meal_type: mealType,
+        date: today,
+        userInput: texto.trim(),
+        items: resultado.items?.map(item => ({
+          name: item.name,
+          calories: item.calories,
+          protein: item.protein,
+          carbs: (item as { carbs?: number }).carbs,
+          fat: (item as { fat?: number }).fat,
+          portion: (item as { portion?: string }).portion,
+        })),
+      })
       setTexto('')
       setResultado(null)
       onClose()

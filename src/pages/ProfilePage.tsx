@@ -32,7 +32,7 @@ export function ProfilePage() {
   ]
 
   return (
-    <div className="p-5 space-y-8 overflow-auto min-h-0">
+    <div className="p-5 space-y-8 overflow-auto min-h-0 overscroll-contain">
 
       {/* Identity row */}
       <div className="flex items-center justify-between">

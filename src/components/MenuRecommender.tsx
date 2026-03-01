@@ -141,7 +141,7 @@ function MealDetailModal({ meal, onClose }: { meal: DisplayMeal; onClose: () => 
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-8 pt-3 space-y-5">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-8 pt-3 space-y-5">
             <div>
               <h2 className="text-xl font-bold text-white">{meal.label}</h2>
               <p className="text-sm text-gray-400 mt-0.5">{meal.description}</p>

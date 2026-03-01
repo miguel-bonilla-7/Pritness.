@@ -3,9 +3,11 @@ import {
   Loader2, Dumbbell, Flame, Zap, Activity, Waves,
   Bike, Wind, HeartPulse, Footprints, Timer, Mountain,
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useDailyLog } from '../context/DailyLogContext'
 import { useUser } from '../context/UserContext'
 import { analyzeWOD } from '../lib/api'
+import { SwipeToDelete } from '../components/SwipeToDelete'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
@@ -182,7 +184,7 @@ function WodAddBlock({
 
 export function WODsPage() {
   const { profile } = useUser()
-  const { wods, setBurned, addWod } = useDailyLog()
+  const { wods, setBurned, addWod, removeWod } = useDailyLog()
   const [wodInput, setWodInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -201,7 +203,7 @@ export function WODsPage() {
 
   if (wods.length === 0) {
     return (
-      <div className="p-5 space-y-6 overflow-auto min-h-0">
+      <div className="p-5 space-y-6 overflow-auto min-h-0 overscroll-contain">
         <p className="text-sm font-medium text-white">Entrenamiento</p>
         {addBlock}
         <p className="text-[11px] text-gray-600 text-center">Describe lo que hiciste y la IA estimará las calorías quemadas.</p>
@@ -210,62 +212,69 @@ export function WODsPage() {
   }
 
   return (
-    <div className="p-5 space-y-6 overflow-auto min-h-0">
+    <div className="p-5 space-y-6 overflow-auto min-h-0 overscroll-contain">
       <p className="text-sm font-medium text-white">Entrenamiento</p>
       {addBlock}
 
       {/* History */}
       <div className="space-y-3">
-        {wods.map((wod) => {
-          const { gradient, Icon, label } = getWodVisual(wod.description, wod.exercises)
-          return (
-            <div
-              key={wod.id}
-              className="rounded-2xl overflow-hidden"
-              style={{ background: '#16161f' }}
-            >
-              {/* Color strip with icon */}
-              <div
-                className="flex items-center gap-3 px-4 py-3"
-                style={{ background: `linear-gradient(135deg, ${gradient[0]}22 0%, ${gradient[1]}11 100%)`,
-                         borderBottom: `1px solid ${gradient[0]}22` }}
+        <div className="flex items-baseline justify-between px-0.5">
+          <p className="text-[10px] text-white/25 uppercase tracking-widest">desliza para eliminar</p>
+        </div>
+        <AnimatePresence initial={false}>
+          {wods.map((wod) => {
+            const { gradient, Icon, label } = getWodVisual(wod.description, wod.exercises)
+            return (
+              <motion.div
+                key={wod.id}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})` }}
-                >
-                  <Icon size={18} color="white" strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white">{label}</p>
-                  <p className="text-[10px] text-white/40">{formatDate(wod.date)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-light text-white tabular-nums">{wod.estimatedCaloriesBurned}</p>
-                  <p className="text-[9px] uppercase tracking-widest" style={{ color: gradient[0] }}>kcal</p>
-                </div>
-              </div>
-
-              {/* Description + exercises */}
-              <div className="px-4 py-3 space-y-1.5">
-                <p className="text-xs text-white/60 leading-snug">{wod.description}</p>
-                {wod.exercises?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {wod.exercises.slice(0, 5).map((ex, j) => (
-                      <span
-                        key={j}
-                        className="text-[10px] px-2 py-0.5 rounded-full"
-                        style={{ background: `${gradient[0]}18`, color: gradient[0] }}
+                <SwipeToDelete onDelete={() => removeWod(wod.id)}>
+                  <div className="rounded-2xl overflow-hidden" style={{ background: '#16161f' }}>
+                    {/* Color strip with icon */}
+                    <div
+                      className="flex items-center gap-3 px-4 py-3"
+                      style={{ background: `linear-gradient(135deg, ${gradient[0]}22 0%, ${gradient[1]}11 100%)`,
+                               borderBottom: `1px solid ${gradient[0]}22` }}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})` }}
                       >
-                        {ex}
-                      </span>
-                    ))}
+                        <Icon size={18} color="white" strokeWidth={1.8} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-white">{label}</p>
+                        <p className="text-[10px] text-white/40">{formatDate(wod.date)}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-light text-white tabular-nums">{wod.estimatedCaloriesBurned}</p>
+                        <p className="text-[9px] uppercase tracking-widest" style={{ color: gradient[0] }}>kcal</p>
+                      </div>
+                    </div>
+                    {/* Description + exercises */}
+                    <div className="px-4 py-3 space-y-1.5">
+                      <p className="text-xs text-white/60 leading-snug">{wod.description}</p>
+                      {wod.exercises?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {wod.exercises.slice(0, 5).map((ex, j) => (
+                            <span key={j} className="text-[10px] px-2 py-0.5 rounded-full"
+                              style={{ background: `${gradient[0]}18`, color: gradient[0] }}>
+                              {ex}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
+                </SwipeToDelete>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
       </div>
     </div>
   )

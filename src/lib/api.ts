@@ -274,14 +274,33 @@ export async function analyzeImageSmart(imageDataUrl: string): Promise<SmartImag
   throw new Error('Configura VITE_GROQ_API_KEY, VITE_GEMINI_API_KEY o VITE_OPENAI_API_KEY para análisis por foto')
 }
 
-const MEAL_TEXT_PROMPT = `El usuario describe en español lo que comió. Responde ÚNICAMENTE un JSON válido (sin markdown, sin código) con estas claves:
-- calories (número): calorías totales estimadas
-- protein (número): gramos de proteína
-- carbs (número): gramos de carbohidratos
-- fat (número): gramos de grasa
-- description (string): breve descripción de la comida en español
-- items (array de { name: string, calories: number, protein: number }): cada plato o alimento con su aporte
-Si el texto no describe comida concreta (ej. "qué comí"), estima un ejemplo razonable o devuelve valores 0. Responde solo el JSON.`
+const MEAL_TEXT_PROMPT = `Eres un nutricionista experto con acceso a tablas nutricionales reales (USDA, FoodData Central, tablas de composición de alimentos de España y Latinoamérica).
+
+El usuario describe en español lo que comió. Tu tarea es estimar los valores nutricionales con la máxima precisión posible.
+
+REGLAS CRÍTICAS — SÍGUE ESTAS AL PIE DE LA LETRA:
+1. Usa SIEMPRE valores de tablas nutricionales reales. Ejemplos de referencia:
+   - Pechuga de pollo cocida 100g: 165 kcal, 31g proteína, 0g carbs, 3.6g grasa
+   - Huevo entero grande (50g): 72 kcal, 6g proteína, 0.4g carbs, 5g grasa
+   - Arroz blanco cocido 100g: 130 kcal, 2.7g proteína, 28g carbs, 0.3g grasa
+   - Pan blanco 30g (1 tajada): 80 kcal, 2.7g proteína, 15g carbs, 1g grasa
+   - Atún en lata 85g: 109 kcal, 25g proteína, 0g carbs, 1g grasa
+   - Leche entera 240ml: 149 kcal, 8g proteína, 12g carbs, 8g grasa
+   - Banana mediana 120g: 107 kcal, 1.3g proteína, 27g carbs, 0.4g grasa
+2. ASUME porciones típicas de comida latinoamericana/española si el usuario no especifica cantidad.
+3. Si el usuario dice "un plato de arroz con pollo", asume: 200g arroz cocido + 150g pechuga cocida.
+4. NUNCA inventes valores. Si no conoces el alimento exacto, busca el más similar en tablas reales.
+5. Suma los macros item por item. El total debe ser la suma exacta de los ítems.
+6. La temperatura del LLM para esta tarea debe ser mínima — no hay creatividad aquí, solo datos.
+7. Si la descripción es vaga (ej: "comí bien"), pide al usuario que sea más específico devolviendo calories: 0 y description explicando qué necesitas.
+
+Responde ÚNICAMENTE un JSON válido (sin markdown, sin código) con estas claves:
+- calories (número entero): total de calorías
+- protein (número entero): gramos de proteína total
+- carbs (número entero): gramos de carbohidratos total  
+- fat (número entero): gramos de grasa total
+- description (string): descripción breve en español de lo que se analizó con las porciones asumidas
+- items (array de { name: string, calories: number, protein: number, carbs: number, fat: number, portion: string }): cada alimento con porción asumida y sus macros`
 
 /** Analiza una descripción en texto de lo que comió el usuario y devuelve calorías y macros (IA). */
 export async function analyzeMealFromText(descripcion: string): Promise<MealAnalysisResult> {
@@ -299,6 +318,7 @@ export async function analyzeMealFromText(descripcion: string): Promise<MealAnal
       body: JSON.stringify({
         model: GROQ_TEXT_MODEL,
         max_tokens: 1024,
+        temperature: 0,
         messages: [
           { role: 'system', content: MEAL_TEXT_PROMPT },
           { role: 'user', content: `Usuario: "${descripcion.trim()}"` },
@@ -322,7 +342,7 @@ export async function analyzeMealFromText(descripcion: string): Promise<MealAnal
           contents: [{
             parts: [{ text: `${MEAL_TEXT_PROMPT}\n\nUsuario: "${descripcion.trim()}"` }],
           }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0, maxOutputTokens: 1024 },
         }),
       }
     )
