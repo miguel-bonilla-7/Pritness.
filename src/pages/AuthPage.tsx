@@ -137,28 +137,16 @@ export function AuthPage() {
       {/* ── HERO: animated aurora gradient ── */}
       <div className="relative flex-1 overflow-hidden flex flex-col items-center justify-center">
         {/* Blobs */}
-        {/* Círculos lentos y constantes — rutas cerradas para loop sin salto */}
-        <Blob color="#f97316" size={280} opacity={0.65}
-          x={[-60, 40, 120, 60, -40, -120, -60]} y={[-80, -120, 0, 100, 120, 40, -80]}
-          duration={18} delay={0} />
-        <Blob color="#7c3aed" size={320} opacity={0.6}
-          x={[80, 160, 80, -40, -120, -40, 80]} y={[60, -40, -120, -80, 20, 120, 60]}
-          duration={22} delay={2} />
-        <Blob color="#a855f7" size={220} opacity={0.55}
-          x={[20, 120, 160, 60, -60, -140, 20]} y={[120, 60, -40, -120, -60, 40, 120]}
-          duration={16} delay={4} />
-        <Blob color="#ec4899" size={180} opacity={0.5}
-          x={[-100, -20, 80, 140, 60, -60, -100]} y={[40, -80, -120, 0, 100, 140, 40]}
-          duration={20} delay={1} />
-        <Blob color="#eab308" size={160} opacity={0.5}
-          x={[60, 140, 60, -60, -140, -60, 60]} y={[-100, 20, 120, 100, 0, -100, -100]}
-          duration={14} delay={3} />
-        <Blob color="#06b6d4" size={200} opacity={0.45}
-          x={[-140, -40, 60, 140, 40, -80, -140]} y={[20, 120, 100, -20, -120, -80, 20]}
-          duration={25} delay={0} />
-        <Blob color="#f97316" size={140} opacity={0.4} blur={50}
-          x={[100, 0, -100, -60, 60, 140, 100]} y={[80, 160, 80, -60, -120, -20, 80]}
-          duration={12} delay={6} />
+        {/* 3 blobs suaves — menos carga en móvil */}
+        <Blob color="#f97316" size={300} opacity={0.5}
+          x={[-40, 80, 40, -80, -40]} y={[-60, 40, 120, 60, -60]}
+          duration={20} delay={0} />
+        <Blob color="#7c3aed" size={260} opacity={0.45}
+          x={[60, -60, -40, 80, 60]} y={[80, 20, -80, -40, 80]}
+          duration={24} delay={3} />
+        <Blob color="#ec4899" size={200} opacity={0.4}
+          x={[-80, 40, 100, 20, -80]} y={[40, -60, 20, 100, 40]}
+          duration={18} delay={6} />
 
         {/* Vignette overlay so text is always readable */}
         <div className="absolute inset-0 bg-black/40" />
@@ -185,13 +173,13 @@ export function AuthPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3, ease: 'easeOut' }}
-        className="relative z-10 bg-black px-6 pt-8 pb-10 space-y-3"
+        className="relative z-10 bg-black px-6 pt-10 pb-12 space-y-4"
         style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
       >
         <motion.button
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setMode('login')}
-          className="w-full rounded-2xl py-4 font-bold text-black text-base flex items-center justify-between px-5 bg-white"
+          className="w-full rounded-2xl py-4 font-bold text-black text-base flex items-center justify-between px-5 bg-white active:opacity-90 transition-opacity"
           style={{ boxShadow: '0 4px 24px rgba(255,255,255,0.15)' }}
         >
           <span>Iniciar sesión</span>
@@ -199,9 +187,9 @@ export function AuthPage() {
         </motion.button>
 
         <motion.button
-          whileTap={{ scale: 0.97 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setMode('register')}
-          className="w-full rounded-2xl py-4 font-bold text-black text-base flex items-center justify-between px-5 bg-white"
+          className="w-full rounded-2xl py-4 font-bold text-black text-base flex items-center justify-between px-5 bg-white active:opacity-90 transition-opacity"
           style={{ boxShadow: '0 4px 24px rgba(255,255,255,0.15)' }}
         >
           <span>Registrarse</span>

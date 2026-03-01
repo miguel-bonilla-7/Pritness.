@@ -17,7 +17,9 @@ html {
   inset: 0;
   overflow: hidden;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 body {
@@ -27,6 +29,7 @@ body {
   inset: 0;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: pan-y;
 }
 
 #root {

@@ -6,6 +6,24 @@ const GROQ_BASE = 'https://api.groq.com/openai/v1'
 const GROQ_TEXT_MODEL = import.meta.env.VITE_GROQ_TEXT_MODEL || 'llama-3.1-8b-instant'
 const GROQ_VISION_MODEL = import.meta.env.VITE_GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct'
 
+/** Groq 429 = rate limit. Reintenta con espera. */
+async function groqFetch(url: string, options: RequestInit, retries = 2): Promise<Response> {
+  let res = await fetch(url, options)
+  for (let i = 0; i < retries && res.status === 429; i++) {
+    const waitMs = (i + 1) * 4000
+    await new Promise((r) => setTimeout(r, waitMs))
+    res = await fetch(url, options)
+  }
+  return res
+}
+
+function groqError(status: number, body: string): Error {
+  if (status === 429) {
+    return new Error('Límite de solicitudes alcanzado. Espera unos segundos e intenta de nuevo.')
+  }
+  return new Error(`Groq error ${status}: ${body}`)
+}
+
 export interface MealAnalysisResult {
   calories: number
   protein: number
@@ -116,7 +134,7 @@ async function getOpenAIMealAnalysis(imageDataUrl: string): Promise<MealAnalysis
 
 async function getGroqMealAnalysis(imageDataUrl: string): Promise<MealAnalysisResult> {
   if (!GROQ_API_KEY) throw new Error('VITE_GROQ_API_KEY is not set')
-  const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+  const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -141,7 +159,7 @@ async function getGroqMealAnalysis(imageDataUrl: string): Promise<MealAnalysisRe
   })
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Groq API error: ${res.status} ${err}`)
+    throw groqError(res.status, err)
   }
   const data = await res.json()
   const text = data.choices?.[0]?.message?.content?.trim() || '{}'
@@ -195,7 +213,7 @@ function parseSmartImageResponse(text: string): SmartImageResult {
 /** Detecta si la foto es comida o ejercicio y devuelve el análisis correspondiente */
 export async function analyzeImageSmart(imageDataUrl: string): Promise<SmartImageResult> {
   if (GROQ_API_KEY) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -215,7 +233,10 @@ export async function analyzeImageSmart(imageDataUrl: string): Promise<SmartImag
         ],
       }),
     })
-    if (!res.ok) throw new Error(`Groq: ${res.status}`)
+    if (!res.ok) {
+      const err = await res.text()
+      throw groqError(res.status, err)
+    }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content?.trim() || '{}'
     return parseSmartImageResponse(text)
@@ -309,7 +330,7 @@ export async function analyzeMealFromText(descripcion: string): Promise<MealAnal
   const apiKeyOpenAI = import.meta.env.VITE_OPENAI_API_KEY
 
   if (apiKeyGroq) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -325,7 +346,10 @@ export async function analyzeMealFromText(descripcion: string): Promise<MealAnal
         ],
       }),
     })
-    if (!res.ok) throw new Error(`Groq: ${res.status}`)
+    if (!res.ok) {
+      const err = await res.text()
+      throw groqError(res.status, err)
+    }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content?.trim() || '{}'
     const cleaned = text.replace(/^```json?\s*|\s*```$/g, '')
@@ -426,7 +450,7 @@ export async function getAIGoalRecommendation(
   }
 
   if (GROQ_API_KEY) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -442,7 +466,10 @@ export async function getAIGoalRecommendation(
         ],
       }),
     })
-    if (!res.ok) throw new Error(`Groq: ${res.status}`)
+    if (!res.ok) {
+      const err = await res.text()
+      throw groqError(res.status, err)
+    }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content?.trim() || '{}'
     return parseResponse(text)
@@ -500,7 +527,7 @@ export async function analyzeWOD(input: string, userWeightKg?: number): Promise<
   const prompt = `The user describes a workout (WOD): "${input}". User weight: ${weight} kg. Reply with ONLY a JSON object: { "description": "short summary", "exercises": ["exercise1", "exercise2"], "estimatedCaloriesBurned": number }. Estimate calories burned for this workout.`
 
   if (GROQ_API_KEY) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -512,7 +539,10 @@ export async function analyzeWOD(input: string, userWeightKg?: number): Promise<
         messages: [{ role: 'user', content: prompt }],
       }),
     })
-    if (!res.ok) throw new Error(`Groq error: ${res.status}`)
+    if (!res.ok) {
+      const err = await res.text()
+      throw groqError(res.status, err)
+    }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content?.trim() || '{}'
     const cleaned = text.replace(/^```json?\s*|\s*```$/g, '')
@@ -561,7 +591,7 @@ export async function sendChatMessage(
   history: { role: 'user' | 'assistant'; content: string }[]
 ): Promise<string> {
   if (GROQ_API_KEY) {
-    const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+    const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -577,7 +607,10 @@ export async function sendChatMessage(
         ],
       }),
     })
-    if (!res.ok) throw new Error(`Groq error: ${res.status}`)
+    if (!res.ok) {
+      const err = await res.text()
+      throw groqError(res.status, err)
+    }
     const data = await res.json()
     return data.choices?.[0]?.message?.content?.trim() || 'No response.'
   }
@@ -724,7 +757,7 @@ export async function getAIMealSuggestions(
 
   try {
     if (GROQ_API_KEY) {
-      const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+      const res = await groqFetch(`${GROQ_BASE}/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
         body: JSON.stringify({
@@ -734,7 +767,10 @@ export async function getAIMealSuggestions(
           messages: [{ role: 'user', content: prompt }],
         }),
       })
-      if (!res.ok) throw new Error(`Groq: ${res.status}`)
+      if (!res.ok) {
+        const err = await res.text()
+        throw groqError(res.status, err)
+      }
       const data = await res.json()
       return parseSuggestionsResponse(data.choices?.[0]?.message?.content?.trim() || '[]')
     }

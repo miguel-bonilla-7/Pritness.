@@ -42,11 +42,11 @@ export function ProfilePage() {
         </div>
         <button
           type="button"
-          onClick={() => setMostrarEditar(true)}
-          className="w-8 h-8 flex items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-gray-500 active:bg-white/[0.08] transition-colors"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMostrarEditar(true) }}
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-gray-500 active:bg-white/[0.08] transition-colors touch-manipulation"
           aria-label="Editar perfil"
         >
-          <Pencil className="w-3.5 h-3.5" />
+          <Pencil className="w-4 h-4" />
         </button>
       </div>
 

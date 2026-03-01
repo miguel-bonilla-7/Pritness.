@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUser } from '../context/UserContext'
+import { PageSpinner } from '../components/PageSpinner'
 import { useDailyLog, type MealEntry } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
 import { ProgressArc } from '../components/ProgressArc'
@@ -33,7 +34,7 @@ export function DashboardPage() {
   const [showLogDrink, setShowLogDrink] = useState(false)
   const [selectedMeal, setSelectedMeal] = useState<MealEntry | null>(null)
 
-  if (!profile) return null
+  if (!profile) return <PageSpinner message="Cargando perfil..." />
 
   const targetCal = profile.dailyCaloriesTarget
   const heightM = profile.height / 100
