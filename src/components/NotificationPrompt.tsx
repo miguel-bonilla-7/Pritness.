@@ -5,21 +5,25 @@ import { updateNotificationPreference } from '../lib/supabase'
 import { registerPushForProfile } from '../lib/push'
 
 export function NotificationPrompt() {
-  const { profile } = useUser()
+  const { profile, setProfile } = useUser()
   const { refetchProfile } = useAuth()
   const [choosing, setChoosing] = useState(false)
 
-  const show = profile?.id && profile?.notification_prompt_shown === false
+  const show = profile?.id && (profile?.notification_prompt_shown ?? false) === false
 
   const handleChoice = async (wants: boolean) => {
     if (!profile?.id || choosing) return
     setChoosing(true)
+    // Cerrar modal al instante
+    setProfile({ ...profile, notification_prompt_shown: true })
     try {
       await updateNotificationPreference(profile.id, wants)
       if (wants) {
         await registerPushForProfile(profile.id)
       }
       await refetchProfile()
+    } catch (e) {
+      console.warn('[NotificationPrompt] Error:', e)
     } finally {
       setChoosing(false)
     }
@@ -29,12 +33,9 @@ export function NotificationPrompt() {
 
   return (
     <div className="fixed inset-0 z-[90] flex items-end justify-center px-4 pb-24">
+      <div className="absolute inset-0 bg-black/70" aria-hidden />
       <div
-        className="absolute inset-0 bg-black/70"
-        aria-hidden
-      />
-      <div
-        className="relative w-full max-w-[320px] rounded-2xl px-5 py-4"
+        className="relative z-10 w-full max-w-[320px] rounded-2xl px-5 py-4"
         style={{ background: '#16161f', border: '1px solid rgba(255,255,255,0.06)' }}
       >
         <p className="text-sm text-white/80 text-center mb-1">
@@ -46,19 +47,19 @@ export function NotificationPrompt() {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => handleChoice(false)}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleChoice(true) }}
             disabled={choosing}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-400 bg-white/[0.04] hover:bg-white/[0.08] transition-colors touch-manipulation disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
           >
-            No
+            Sí
           </button>
           <button
             type="button"
-            onClick={() => handleChoice(true)}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleChoice(false) }}
             disabled={choosing}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 transition-colors touch-manipulation disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-400 bg-white/[0.04] hover:bg-white/[0.08] transition-colors touch-manipulation disabled:opacity-50 min-h-[44px]"
           >
-            Sí
+            No
           </button>
         </div>
       </div>
