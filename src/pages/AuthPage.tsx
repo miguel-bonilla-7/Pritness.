@@ -101,12 +101,14 @@ export function AuthPage() {
       const tmb = calculateTMB(w, h, a, sex)
       const targets = getTargetsFromGoal(tmb, goal)
       const profileData: UserProfile = { name: name.trim(), weight: w, height: h, age: a, goal, sex, tmb, ...targets }
+      const tz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC'
       const { data: inserted, error: insertErr } = await insertProfile(s.user.id, {
         username, name: profileData.name, weight: profileData.weight, height: profileData.height,
         age: profileData.age, goal: profileData.goal, sex: profileData.sex ?? null, tmb: profileData.tmb,
         daily_calories_target: profileData.dailyCaloriesTarget, protein_target: profileData.proteinTarget,
         carbs_target: profileData.carbsTarget, fat_target: profileData.fatTarget,
         wants_notifications: wantsNotifications,
+        timezone: tz,
       })
       if (insertErr) { setError(insertErr.message); return }
       if (inserted) {

@@ -68,16 +68,16 @@ select vault.create_secret('https://TU_PROJECT_REF.supabase.co', 'project_url');
 select vault.create_secret('TU_ANON_KEY', 'anon_key');
 ```
 
-## 5. Horarios de notificaciones (UTC)
+## 5. Horarios de notificaciones (hora local del usuario)
 
-| Hora UTC | Tipo      | Mensaje                          |
-|----------|-----------|----------------------------------|
-| 8        | Desayuno  | Recordatorio desayuno            |
-| 10       | Agua      | Progreso de agua del día         |
-| 13       | Almuerzo  | Recordatorio almuerzo            |
-| 16       | Merienda  | Recordatorio merienda            |
-| 18       | Ejercicio | Recordatorio entrenamiento       |
-| 20       | Cena      | Recordatorio cena                |
-| 22       | Proteína  | Proteína restante o meta cumplida|
+Las notificaciones se envían según la **hora del teléfono** de cada usuario. La app guarda la zona horaria (ej. America/Bogota) al abrir la app o al registrarse.
 
-Ajusta según la zona horaria de tus usuarios (p. ej. UTC-5 para Colombia).
+| Hora local | Tipo      | Mensaje                          |
+|------------|-----------|----------------------------------|
+| 8:00       | Desayuno  | Recordatorio desayuno            |
+| 10:00      | Agua      | Progreso de agua del día         |
+| 13:00      | Almuerzo  | Recordatorio almuerzo            |
+| 16:00      | Merienda  | Recordatorio merienda            |
+| 18:00      | Ejercicio | Recordatorio entrenamiento       |
+| 20:00      | Cena      | Recordatorio cena                |
+| 22:00      | Proteína  | Proteína restante o meta cumplida|

@@ -4,6 +4,8 @@
 -- Preferencia de notificaciones en perfil
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS wants_notifications BOOLEAN DEFAULT false;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS notification_prompt_shown BOOLEAN DEFAULT false;
+-- Zona horaria del usuario (ej. America/Bogota) para notificaciones a su hora local
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'UTC';
 
 -- Suscripciones push (Web Push API)
 CREATE TABLE IF NOT EXISTS push_subscriptions (

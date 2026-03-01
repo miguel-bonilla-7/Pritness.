@@ -100,6 +100,7 @@ export async function insertProfile(
     carbs_target: number
     fat_target: number
     wants_notifications?: boolean
+    timezone?: string
   }
 ): Promise<{ data: DbProfile | null; error: Error | null }> {
   if (!isConfigured) return { data: null, error: new Error('Supabase no configurada') }
@@ -122,6 +123,7 @@ export async function insertProfile(
         fat_target: profile.fat_target,
         wants_notifications: profile.wants_notifications ?? false,
         notification_prompt_shown: true,
+        timezone: profile.timezone ?? 'UTC',
       })
       .select()
       .single()
@@ -154,6 +156,7 @@ export async function updateProfileInDb(
     tmb?: number
     wants_notifications?: boolean
     notification_prompt_shown?: boolean
+    timezone?: string
     daily_calories_target?: number
     protein_target?: number
     carbs_target?: number
@@ -490,6 +493,7 @@ export function mapDbProfileToUserProfile(db: DbProfile): {
   fatTarget: number
   sex?: 'male' | 'female'
   notification_prompt_shown?: boolean
+  timezone?: string
 } {
   return {
     id: db.id,
@@ -505,5 +509,6 @@ export function mapDbProfileToUserProfile(db: DbProfile): {
     fatTarget: db.fat_target,
     sex: db.sex === 'male' || db.sex === 'female' ? db.sex : undefined,
     notification_prompt_shown: db.notification_prompt_shown ?? false,
+    timezone: db.timezone ?? 'UTC',
   }
 }

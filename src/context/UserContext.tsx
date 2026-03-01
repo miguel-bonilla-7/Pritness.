@@ -17,6 +17,7 @@ export interface UserProfile {
   sex?: 'male' | 'female'
   country?: string
   notification_prompt_shown?: boolean
+  timezone?: string
 }
 
 interface UserContextValue {
