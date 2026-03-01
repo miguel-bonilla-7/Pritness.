@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from './Modal'
 import { useDailyLog } from '../context/DailyLogContext'
+import { useUser } from '../context/UserContext'
+import { insertWeightLog } from '../lib/supabase'
 
 interface LogWeightModalProps {
   open: boolean
@@ -8,14 +10,20 @@ interface LogWeightModalProps {
 }
 
 export function LogWeightModal({ open, onClose }: LogWeightModalProps) {
+  const { profile } = useUser()
   const { weightKg, logWeight } = useDailyLog()
-  const [value, setValue] = useState(weightKg.toString())
+  const [value, setValue] = useState(weightKg > 0 ? weightKg.toString() : '')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (open) setValue(weightKg > 0 ? weightKg.toString() : '')
+  }, [open, weightKg])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const kg = parseFloat(value.replace(',', '.'))
     if (!isNaN(kg) && kg > 0 && kg < 300) {
       logWeight(kg)
+      if (profile?.id) await insertWeightLog(profile.id, kg)
       onClose()
     }
   }

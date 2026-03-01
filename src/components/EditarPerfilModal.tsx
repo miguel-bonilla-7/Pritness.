@@ -26,6 +26,7 @@ export function EditarPerfilModal({ open, onClose }: EditarPerfilModalProps) {
   const [edad, setEdad] = useState('')
   const [sexo, setSexo] = useState<'male' | 'female'>('male')
   const [objetivo, setObjetivo] = useState<Goal>('definir_masa')
+  const [pais, setPais] = useState('')
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
 
@@ -37,6 +38,7 @@ export function EditarPerfilModal({ open, onClose }: EditarPerfilModalProps) {
       setEdad(String(profile.age))
       setSexo(profile.sex ?? 'male')
       setObjetivo(profile.goal)
+      setPais(profile.country ?? '')
     }
   }, [profile, open])
 
@@ -94,6 +96,7 @@ export function EditarPerfilModal({ open, onClose }: EditarPerfilModalProps) {
         age: a,
         sex: sexo,
         goal: objetivo,
+        country: pais.trim() || undefined,
         tmb,
         dailyCaloriesTarget: targets.dailyCaloriesTarget,
         proteinTarget: targets.proteinTarget,
@@ -160,6 +163,16 @@ export function EditarPerfilModal({ open, onClose }: EditarPerfilModalProps) {
               placeholder="25"
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">País</label>
+          <input
+            type="text"
+            value={pais}
+            onChange={(e) => setPais(e.target.value)}
+            className="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/20"
+            placeholder="Colombia, México, España..."
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Sexo</label>

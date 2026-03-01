@@ -613,3 +613,147 @@ export async function sendChatMessage(
 
   return 'Configura VITE_GROQ_API_KEY, VITE_GEMINI_API_KEY o VITE_OPENAI_API_KEY en .env para usar el asistente.'
 }
+
+export interface AIMealSuggestion {
+  label: string
+  description: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  imageCategory: string
+  ingredients: string[]
+  recipe: string[]
+}
+
+const IMAGE_CATEGORIES = [
+  'eggs', 'chicken', 'fish', 'salad', 'smoothie',
+  'yogurt', 'quinoa', 'oats', 'soup', 'pasta', 'beef', 'turkey', 'generic',
+]
+
+function buildSuggestionsPrompt(
+  remainingCal: number,
+  remainingProtein: number,
+  hour: number,
+  goal: string,
+  chatSummary: string,
+  country: string,
+  dislikedFoods: string[]
+): string {
+  const mealTime =
+    hour < 11 ? 'desayuno' :
+    hour < 15 ? 'almuerzo' :
+    hour < 20 ? 'merienda o cena temprana' : 'cena'
+
+  const countryLine = country
+    ? `- País del usuario: ${country}. Sugiere alimentos típicos, accesibles y comunes en ese país.`
+    : '- Sugiere alimentos accesibles y comunes que se consigan fácilmente en cualquier supermercado.'
+
+  const dislikedLine = dislikedFoods.length > 0
+    ? `- Alimentos que el usuario NO quiere que le recomienden: ${dislikedFoods.join(', ')}. NUNCA los incluyas.`
+    : ''
+
+  return `Eres un asistente de nutrición experto. Genera EXACTAMENTE 3 sugerencias de comida personalizadas.
+
+CONTEXTO:
+- Hora actual: ${hour}:00 (momento del día: ${mealTime})
+- Calorías restantes hoy: ${remainingCal} kcal
+- Proteína restante hoy: ${remainingProtein}g
+- Objetivo del usuario: ${goal}
+${countryLine}
+${dislikedLine}
+- Historial de conversación reciente con el usuario: """${chatSummary}"""
+
+REGLAS IMPORTANTES:
+1. Sugiere SOLO comidas que la gente come normalmente en su día a día. Nada exótico ni difícil de conseguir.
+2. Respeta ABSOLUTAMENTE cualquier alimento que el usuario haya mencionado que no le gusta, no come, o es alérgico en el historial de chat.
+3. ${dislikedFoods.length > 0 ? `NUNCA sugieras: ${dislikedFoods.join(', ')}.` : 'Evita ingredientes poco comunes.'}
+4. Sugiere comidas apropiadas para ${mealTime}.
+5. Las calorías de cada sugerencia deben ser menores o iguales a ${remainingCal}.
+6. imageCategory debe ser UNA de estas opciones exactas: ${IMAGE_CATEGORIES.join(', ')}.
+7. ingredients debe ser un array de strings con cantidades específicas.
+8. recipe debe ser un array de pasos cortos y claros.
+
+Responde ÚNICAMENTE con un JSON array válido (sin markdown, sin texto extra) con exactamente 3 objetos con estas claves:
+label (string), description (string), calories (number), protein (number), carbs (number), fat (number), imageCategory (string), ingredients (string[]), recipe (string[])`
+}
+
+function parseSuggestionsResponse(text: string): AIMealSuggestion[] {
+  const cleaned = text.replace(/^```json?\s*|\s*```$/g, '').trim()
+  const arr = JSON.parse(cleaned) as AIMealSuggestion[]
+  if (!Array.isArray(arr)) throw new Error('Expected array')
+  return arr.slice(0, 3)
+}
+
+export async function getAIMealSuggestions(
+  remainingCal: number,
+  remainingProtein: number,
+  hour: number,
+  goal: string,
+  chatHistory: { role: string; content: string }[],
+  country = '',
+  dislikedFoods: string[] = []
+): Promise<AIMealSuggestion[]> {
+  const chatSummary = chatHistory
+    .slice(-20)
+    .map((m) => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`)
+    .join('\n')
+    .slice(0, 2000)
+
+  const prompt = buildSuggestionsPrompt(remainingCal, remainingProtein, hour, goal, chatSummary, country, dislikedFoods)
+
+  try {
+    if (GROQ_API_KEY) {
+      const res = await fetch(`${GROQ_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
+        body: JSON.stringify({
+          model: GROQ_TEXT_MODEL,
+          max_tokens: 2048,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      if (!res.ok) throw new Error(`Groq: ${res.status}`)
+      const data = await res.json()
+      return parseSuggestionsResponse(data.choices?.[0]?.message?.content?.trim() || '[]')
+    }
+
+    if (import.meta.env.VITE_GEMINI_API_KEY) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+          }),
+        }
+      )
+      if (!res.ok) throw new Error(`Gemini: ${res.status}`)
+      const data = await res.json()
+      return parseSuggestionsResponse(data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '[]')
+    }
+
+    if (import.meta.env.VITE_OPENAI_API_KEY) {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 2048,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      if (!res.ok) throw new Error(`OpenAI: ${res.status}`)
+      const data = await res.json()
+      return parseSuggestionsResponse(data.choices?.[0]?.message?.content?.trim() || '[]')
+    }
+  } catch {
+    // If AI fails, return empty to trigger fallback
+  }
+
+  return []
+}

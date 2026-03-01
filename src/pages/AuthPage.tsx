@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useUser, type Goal, type UserProfile } from '../context/UserContext'
 import { Card } from '../components/Card'
 import { PageSpinner } from '../components/PageSpinner'
-import { supabase, insertProfile } from '../lib/supabase'
+import { supabase, insertProfile, insertWeightLog } from '../lib/supabase'
 import { calculateTMB, getTargetsFromGoal } from '../lib/tmb'
 
 type Mode = 'login' | 'register'
@@ -135,7 +135,11 @@ export function AuthPage() {
         setError(insertErr.message)
         return
       }
-      if (inserted) profileData.id = inserted.id
+      if (inserted) {
+        profileData.id = inserted.id
+        const { error: weightErr } = await insertWeightLog(inserted.id, profileData.weight)
+        if (weightErr) console.warn('[Pritness] No se pudo guardar peso inicial en BD:', weightErr.message)
+      }
       setProfile(profileData)
       navigate('/dashboard', { replace: true })
     } finally {

@@ -13,48 +13,37 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
     if (!open) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
+    return () => { document.body.style.overflow = prev }
   }, [open])
 
   if (!open) return null
 
-  const modal = (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{
-        paddingTop: 'max(1rem, env(safe-area-inset-top))',
-        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-        paddingLeft: 'max(1rem, env(safe-area-inset-left))',
-        paddingRight: 'max(1rem, env(safe-area-inset-right))',
-      }}
-    >
-      <div
-        className="absolute inset-0 bg-black/70"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        className="absolute left-1/2 top-1/2 w-full max-w-md max-h-[80vh] sm:max-h-[85vh] -translate-x-1/2 -translate-y-1/2 flex flex-col bg-card rounded-3xl shadow-card-glow overflow-hidden"
-      >
-        <div className="shrink-0 bg-card border-b border-white/10 px-4 py-3 flex items-center justify-between rounded-t-3xl">
-          <h3 className="font-bold text-white">{title}</h3>
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-8">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
+      <div className="relative w-full max-w-[320px] max-h-[78vh] flex flex-col rounded-2xl overflow-hidden"
+        style={{ background: '#111116' }}>
+        {/* Header */}
+        <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3">
+          <h3 className="text-sm font-medium text-white">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-gray-400 hover:text-white text-2xl leading-none touch-manipulation"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-white/[0.06] text-gray-400 text-lg leading-none touch-manipulation"
             aria-label="Cerrar"
           >
             ×
           </button>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* Divider */}
+        <div className="h-px bg-white/[0.06] mx-4" />
+        {/* Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 overscroll-contain"
+          style={{ WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
-
-  return createPortal(modal, document.body)
 }

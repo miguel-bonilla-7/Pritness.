@@ -23,22 +23,45 @@ function getMealType(): 'breakfast' | 'lunch' | 'dinner' | 'snack' {
   return 'snack'
 }
 
-export function ChatPage() {
-  const { addMeal } = useDailyLog()
-  const { profile } = useUser()
-  const [messages, setMessages] = useState<Message[]>([
+const CHAT_STORAGE_KEY = 'pritness_chat_history'
+
+function loadChatHistory(): Message[] {
+  try {
+    const s = localStorage.getItem(CHAT_STORAGE_KEY)
+    if (s) return JSON.parse(s) as Message[]
+  } catch {}
+  return [
     {
       id: '0',
       role: 'assistant',
       content: 'Hola. Soy tu asistente de nutrición y entrenamiento. Puedes preguntarme sobre dieta, recetas rápidas o motivación.',
     },
-  ])
+  ]
+}
+
+function saveChatHistory(msgs: Message[]) {
+  try {
+    // Keep last 60 messages to avoid localStorage overflow
+    const toSave = msgs.slice(-60)
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave))
+  } catch {}
+}
+
+export function ChatPage() {
+  const { addMeal } = useDailyLog()
+  const { profile } = useUser()
+  const [messages, setMessages] = useState<Message[]>(loadChatHistory)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // Persist chat history whenever messages change
+  useEffect(() => {
+    saveChatHistory(messages)
   }, [messages])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,44 +130,38 @@ export function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-4">
+    <div className="flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-5 space-y-5">
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-                m.role === 'user'
-                  ? 'bg-white/15 text-white rounded-br-md'
-                  : 'bg-card border border-white/10 text-gray-200 rounded-bl-md shadow-card-glow'
-              }`}
-            >
-              <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[82%] ${
+              m.role === 'user'
+                ? 'bg-white/[0.08] text-white rounded-2xl rounded-br-sm px-3.5 py-2.5'
+                : 'text-gray-300'
+            }`}>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.content}</p>
               {m.role === 'assistant' && m.mealData && (
-                <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
-                  <p className="text-xs text-gray-400">{m.mealData.description}</p>
-                  <div className="flex gap-4">
+                <div className="mt-3 pt-3 border-t border-white/[0.08] space-y-2.5">
+                  <div className="flex gap-5">
                     <div>
-                      <p className="text-xl font-bold text-white">{Math.round(m.mealData.calories || 0)}</p>
-                      <p className="text-xs text-gray-400">kcal</p>
+                      <p className="text-xl font-light text-white tabular-nums">{Math.round(m.mealData.calories || 0)}</p>
+                      <p className="text-[10px] text-gray-600 uppercase tracking-widest">kcal</p>
                     </div>
                     <div>
-                      <p className="text-xl font-bold text-white">{Math.round(m.mealData.protein || 0)}</p>
-                      <p className="text-xs text-gray-400">proteína (g)</p>
+                      <p className="text-xl font-light text-white tabular-nums">{Math.round(m.mealData.protein || 0)}</p>
+                      <p className="text-[10px] text-gray-600 uppercase tracking-widest">proteína g</p>
                     </div>
                   </div>
                   {m.mealRegistered ? (
-                    <p className="text-xs text-green-400 font-medium">✓ Registrada en tu día</p>
+                    <p className="text-[11px] text-gray-500">✓ Registrada</p>
                   ) : (
                     <button
                       type="button"
                       onClick={() => handleRegisterMeal(m.id)}
-                      className="w-full rounded-xl py-2 bg-white/15 text-white font-medium hover:bg-white/20 flex items-center justify-center gap-2 text-sm"
+                      className="rounded-xl py-1.5 px-3 border border-white/[0.08] bg-white/[0.04] text-xs text-white/70 flex items-center gap-1.5 active:bg-white/[0.08] transition-colors"
                     >
-                      <PlusCircle className="w-4 h-4" />
-                      Registrar esta comida
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      Registrar
                     </button>
                   )}
                 </div>
@@ -154,30 +171,28 @@ export function ChatPage() {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-card rounded-2xl rounded-bl-md px-4 py-2.5 flex items-center gap-2 text-gray-400">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Pensando...</span>
-            </div>
+            <Loader2 className="w-4 h-4 animate-spin text-gray-600" />
           </div>
         )}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSubmit} className="shrink-0 p-4 border-t border-white/10 safe-bottom bg-app">
+
+      <form onSubmit={handleSubmit} className="shrink-0 px-4 py-3 border-t border-white/[0.06]">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribe lo que comiste o pregunta sobre dieta..."
-            className="flex-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Mensaje..."
+            className="flex-1 rounded-xl bg-white/[0.04] border border-white/[0.08] px-3.5 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/20"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="rounded-xl px-4 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-black font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center"
+            className="rounded-xl px-3.5 py-2.5 border border-white/[0.08] bg-white/[0.04] text-white/50 disabled:opacity-30 active:bg-white/[0.08] transition-colors flex items-center justify-center"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4" />
           </button>
         </div>
       </form>

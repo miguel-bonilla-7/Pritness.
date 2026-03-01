@@ -10,8 +10,8 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <UserProvider>
-          <SyncProfileToUser />
           <DailyLogProvider>
+            <SyncProfileToUser />
             <AppRoutes />
           </DailyLogProvider>
         </UserProvider>

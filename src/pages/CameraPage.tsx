@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { Camera, Loader2, Flame } from 'lucide-react'
-import { useUser } from '../context/UserContext'
 import { useDailyLog } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
 import { analyzeImageSmart, type MealAnalysisResult, type WODAnalysisResult } from '../lib/api'
-import { insertWod } from '../lib/supabase'
 
 export function CameraPage() {
-  const { profile } = useUser()
   const { addMeal, setBurned, addWod } = useDailyLog()
   const [mealResult, setMealResult] = useState<MealAnalysisResult | null>(null)
   const [wodResult, setWodResult] = useState<WODAnalysisResult | null>(null)
@@ -64,15 +61,6 @@ export function CameraPage() {
       exercises: wodResult.exercises ?? [],
       estimatedCaloriesBurned: wodResult.estimatedCaloriesBurned,
     })
-    if (profile?.id) {
-      const today = new Date().toISOString().slice(0, 10)
-      insertWod(profile.id, {
-        date: today,
-        description: wodResult.description,
-        calories_burned: wodResult.estimatedCaloriesBurned,
-        source: 'photo',
-      })
-    }
     setWodResult(null)
   }
 

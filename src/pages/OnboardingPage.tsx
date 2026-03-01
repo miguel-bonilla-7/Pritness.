@@ -22,6 +22,7 @@ export function OnboardingPage() {
   const [age, setAge] = useState('')
   const [goal, setGoal] = useState<Goal>('definir_masa')
   const [sex, setSex] = useState<'male' | 'female'>('male')
+  const [country, setCountry] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -59,6 +60,7 @@ export function OnboardingPage() {
       goal,
       sex,
       tmb,
+      country: country.trim() || undefined,
       ...targets,
     }
 
@@ -148,6 +150,16 @@ export function OnboardingPage() {
                   placeholder="25"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">País</label>
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="Colombia, México, España..."
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Sexo</label>

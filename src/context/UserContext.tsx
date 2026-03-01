@@ -15,6 +15,7 @@ export interface UserProfile {
   carbsTarget: number
   fatTarget: number
   sex?: 'male' | 'female'
+  country?: string
 }
 
 interface UserContextValue {

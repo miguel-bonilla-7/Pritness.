@@ -3,7 +3,7 @@ import { Camera, Loader2, Flame } from 'lucide-react'
 import { useUser } from './UserContext'
 import { useDailyLog } from './DailyLogContext'
 import { analyzeImageSmart, type MealAnalysisResult, type WODAnalysisResult } from '../lib/api'
-import { insertWod } from '../lib/supabase'
+import { insertMeal } from '../lib/supabase'
 import { Modal } from '../components/Modal'
 
 type CameraResult = { type: 'meal'; data: MealAnalysisResult } | { type: 'wod'; data: WODAnalysisResult }
@@ -63,10 +63,21 @@ export function CameraProvider({ children }: { children: ReactNode }) {
 
   const handleAddMeal = useCallback(() => {
     if (result?.type !== 'meal') return
-    addMeal(Math.round(result.data.calories), Math.round(result.data.protein || 0))
+    const cal = Math.round(result.data.calories)
+    const prot = Math.round(result.data.protein || 0)
+    addMeal(cal, prot)
+    if (profile?.id) {
+      insertMeal(profile.id, {
+        meal_type: 'snack',
+        name: result.data.description || 'Foto',
+        calories: cal,
+        protein: prot,
+        source: 'ai_vision',
+      })
+    }
     setResult(null)
     setModalOpen(false)
-  }, [result, addMeal])
+  }, [result, addMeal, profile?.id])
 
   const handleAddWOD = useCallback(() => {
     if (result?.type !== 'wod') return
@@ -77,18 +88,9 @@ export function CameraProvider({ children }: { children: ReactNode }) {
       exercises: data.exercises ?? [],
       estimatedCaloriesBurned: data.estimatedCaloriesBurned,
     })
-    if (profile?.id) {
-      const today = new Date().toISOString().slice(0, 10)
-      insertWod(profile.id, {
-        date: today,
-        description: data.description,
-        calories_burned: data.estimatedCaloriesBurned,
-        source: 'photo',
-      })
-    }
     setResult(null)
     setModalOpen(false)
-  }, [result, setBurned, addWod, profile?.id])
+  }, [result, setBurned, addWod])
 
   const closeModal = useCallback(() => {
     setModalOpen(false)

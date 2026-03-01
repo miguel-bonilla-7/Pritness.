@@ -42,7 +42,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profileFromDb, setProfileFromDb] = useState<AuthProfile | null>(null)
-  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(isSupabaseConfigured)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -80,8 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // Wait until the initial session check is done before making any routing decisions
+    if (loading) return
+
     if (!session?.user?.id || !isSupabaseConfigured) {
-      if (!session) setProfileFromDb(null)
+      setProfileFromDb(null)
       setProfileLoading(false)
       return
     }
@@ -107,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) setProfileLoading(false)
       })
     return () => { mounted = false }
-  }, [session?.user?.id])
+  }, [loading, session?.user?.id])
 
   const signIn = useCallback(async (usuario: string, password: string) => {
     if (!isSupabaseConfigured) {

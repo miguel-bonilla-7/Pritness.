@@ -258,6 +258,121 @@ export async function fetchWods(profileId: string, limit = 50): Promise<{ date: 
   }
 }
 
+/** Inserta un registro de agua en water_logs */
+export async function insertWaterLog(
+  profileId: string,
+  amountMl: number
+): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: null }
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const { error } = await supabase.from('water_logs').insert({
+      user_id: profileId,
+      date: today,
+      amount_ml: amountMl,
+    })
+    if (error) {
+      console.error('[Pritness] insertWaterLog error:', error.message)
+      return { error: new Error(error.message) }
+    }
+    console.debug('[Pritness] Agua guardada en Supabase:', amountMl, 'ml')
+    return { error: null }
+  } catch (err) {
+    console.error('[Pritness] insertWaterLog exception:', err)
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
+/** Obtiene el total de agua (ml) del día actual para un perfil */
+export async function fetchTodayWaterMl(profileId: string): Promise<number> {
+  if (!isConfigured) return 0
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const { data, error } = await supabase
+      .from('water_logs')
+      .select('amount_ml')
+      .eq('user_id', profileId)
+      .eq('date', today)
+    if (error) return 0
+    return (data ?? []).reduce((sum, r) => sum + (Number(r.amount_ml) || 0), 0)
+  } catch {
+    return 0
+  }
+}
+
+/** Obtiene el total de calorías y proteínas del día actual para un perfil */
+export async function fetchTodayMealTotals(
+  profileId: string
+): Promise<{ calories: number; protein: number }> {
+  if (!isConfigured) return { calories: 0, protein: 0 }
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    const { data, error } = await supabase
+      .from('meals')
+      .select('calories, protein')
+      .eq('user_id', profileId)
+      .eq('date', today)
+    if (error) return { calories: 0, protein: 0 }
+    return (data ?? []).reduce(
+      (sum, r) => ({
+        calories: sum.calories + (Number(r.calories) || 0),
+        protein: sum.protein + (Number(r.protein) || 0),
+      }),
+      { calories: 0, protein: 0 }
+    )
+  } catch {
+    return { calories: 0, protein: 0 }
+  }
+}
+
+/** Obtiene los WODs del usuario desde Supabase (para historial completo) */
+export async function fetchAllWods(profileId: string): Promise<{
+  id?: string
+  date: string
+  description: string | null
+  calories_burned: number | null
+}[]> {
+  if (!isConfigured) return []
+  try {
+    const { data, error } = await supabase
+      .from('wods')
+      .select('id, date, description, calories_burned')
+      .eq('user_id', profileId)
+      .order('date', { ascending: false })
+      .limit(100)
+    if (error) return []
+    return (data ?? []) as { id?: string; date: string; description: string | null; calories_burned: number | null }[]
+  } catch {
+    return []
+  }
+}
+
+/** Inserta un registro de peso (weight_logs) */
+export async function insertWeightLog(
+  profileId: string,
+  weightKg: number,
+  date?: string
+): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: null }
+  const d = date ?? new Date().toISOString().slice(0, 10)
+  try {
+    const { error } = await supabase.from('weight_logs').insert({
+      user_id: profileId,
+      date: d,
+      weight_kg: weightKg,
+    })
+    if (error) {
+      console.error('[Pritness] insertWeightLog error:', error.message)
+      return { error: new Error(error.message) }
+    }
+    console.debug('[Pritness] Peso guardado en Supabase:', weightKg, 'kg')
+    return { error: null }
+  } catch (err) {
+    console.error('[Pritness] insertWeightLog exception:', err)
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
 /** Mapea fila de Supabase al tipo UserProfile de la app */
 export function mapDbProfileToUserProfile(db: DbProfile): {
   id: string

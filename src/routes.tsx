@@ -25,25 +25,21 @@ function RequireSession() {
 }
 
 function RedirectToApp() {
-  const { profileFromDb, profileLoading } = useAuth()
+  const { profileFromDb, profileLoading, loading } = useAuth()
   const { profile } = useUser()
   const hasProfile = Boolean(profile ?? profileFromDb)
 
-  if (profileLoading) {
-    return <PageSpinner />
-  }
+  if (loading || profileLoading) return <PageSpinner />
   if (!hasProfile) return <Navigate to="/onboarding" replace />
   return <Navigate to="/dashboard" replace />
 }
 
 function RequireProfile({ children }: { children: React.ReactNode }) {
-  const { profileFromDb, profileLoading } = useAuth()
+  const { profileFromDb, profileLoading, loading } = useAuth()
   const { profile } = useUser()
   const hasProfile = Boolean(profile ?? profileFromDb)
 
-  if (profileLoading) {
-    return <PageSpinner />
-  }
+  if (loading || profileLoading) return <PageSpinner />
   if (!hasProfile) {
     console.debug('[Pritness Routes] Sin perfil, redirigiendo a /onboarding')
     return <Navigate to="/onboarding" replace />

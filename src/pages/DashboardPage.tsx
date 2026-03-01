@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flame, Droplets, Scale, Target } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useUser } from '../context/UserContext'
 import { useDailyLog } from '../context/DailyLogContext'
 import { Card } from '../components/Card'
-import { ProgressBar } from '../components/ProgressBar'
-import { ProgressRing } from '../components/ProgressRing'
+import { ProgressArc } from '../components/ProgressArc'
 import { MenuRecommender } from '../components/MenuRecommender'
 import { LogMealModal } from '../components/LogMealModal'
 import { LogDrinkModal } from '../components/LogDrinkModal'
-import { LogWeightModal } from '../components/LogWeightModal'
 
 const WATER_TARGET_ML = 2000
 
@@ -23,188 +21,156 @@ function getBmiCategory(bmi: number): { label: string; position: number } {
 export function DashboardPage() {
   const navigate = useNavigate()
   const { profile } = useUser()
-  const {
-    eaten,
-    burned,
-    proteinEaten,
-    waterMl,
-    weightKg,
-    weightStartKg,
-  } = useDailyLog()
+  const { eaten, burned, proteinEaten, waterMl } = useDailyLog()
   const [showLogMeal, setShowLogMeal] = useState(false)
   const [showLogDrink, setShowLogDrink] = useState(false)
-  const [showLogWeight, setShowLogWeight] = useState(false)
 
   useEffect(() => {
     if (!profile) {
       navigate('/onboarding', { replace: true })
-      return
     }
   }, [profile, navigate])
 
   if (!profile) return null
 
   const targetCal = profile.dailyCaloriesTarget
-  const remaining = Math.max(0, targetCal - eaten + burned)
-  const waterPct = Math.min(100, (waterMl / WATER_TARGET_ML) * 100)
   const heightM = profile.height / 100
-  const bmi = heightM > 0 ? weightKg / (heightM * heightM) : 0
+  const bmi = heightM > 0 ? profile.weight / (heightM * heightM) : 0
   const bmiCategory = getBmiCategory(bmi)
-  const weightDiff = weightKg - weightStartKg
+
+  const hour = new Date().getHours()
+  const greeting =
+    hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
+  const firstName = profile.name.split(/\s+/)[0]
 
   return (
-    <div className="p-4 space-y-5 overflow-auto min-h-0">
-      {/* Tus metas diarias - arriba en la interfaz */}
-      <Card className="border-orange-500/30 bg-gradient-to-b from-white/5 to-transparent">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-orange-400">
-            <Target className="w-5 h-5" />
-          </span>
-          <h2 className="font-bold text-white">Tus metas diarias</h2>
-        </div>
-        <p className="text-xs text-gray-400 mb-3">Objetivos que debes alcanzar cada día (según tu peso, altura, edad y objetivo)</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-2xl font-bold text-white">{targetCal.toLocaleString()}</p>
-            <p className="text-xs text-gray-400">kcal</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-white">{profile.proteinTarget}</p>
-            <p className="text-xs text-gray-400">g proteína</p>
-          </div>
-          <div>
-            <p className="text-lg font-semibold text-gray-300">{profile.carbsTarget}</p>
-            <p className="text-xs text-gray-400">g carbos</p>
-          </div>
-          <div>
-            <p className="text-lg font-semibold text-gray-300">{profile.fatTarget}</p>
-            <p className="text-xs text-gray-400">g grasa</p>
-          </div>
-        </div>
-      </Card>
+    <div className="p-4 space-y-4 overflow-auto min-h-0">
 
-      {/* Calorie Tracker */}
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-orange-400">
-              <Flame className="w-5 h-5" />
-            </span>
-            <h2 className="font-bold text-white">Calorie Tracker</h2>
-          </div>
-        </div>
-        <p className="text-xs text-gray-400 mb-3">
-          Meta: <span className="text-white font-medium">{targetCal.toLocaleString()} kcal</span>
-          {' · '}
-          <span className="text-white font-medium">{profile.proteinTarget} g</span> proteína
-        </p>
-        <div className="grid grid-cols-2 gap-4 mb-3">
-          <div>
-            <p className="text-xs text-gray-400">Calorías consumidas</p>
-            <p className="text-xl font-bold text-white">+{eaten.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400">Calorías quemadas</p>
-            <p className="text-xl font-bold text-white">-{burned}</p>
-          </div>
-        </div>
-        <ProgressBar value={eaten - burned} max={targetCal} type="calories" />
-        <p className="text-xs text-gray-400 mt-2">Restantes {remaining.toLocaleString()} kcal</p>
-
-        <div className="mt-4 pt-3 border-t border-white/10">
-          <p className="text-xs text-gray-400 mb-1">Proteína consumida</p>
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-xl font-bold text-white">{proteinEaten} <span className="text-sm font-normal text-gray-400">/ {profile.proteinTarget} g</span></p>
-          </div>
-          <ProgressBar value={proteinEaten} max={Math.max(profile.proteinTarget, 1)} type="protein" className="mt-1" />
+      {/* ── Hero section ───────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="relative"
+      >
+        {/* Greeting */}
+        <div className="text-center mb-4">
+          <p className="text-sm text-gray-500">
+            {greeting}, <span className="text-white font-medium">{firstName}</span>
+          </p>
         </div>
 
+        {/* Main arc — protein is the hero metric */}
+        <div className="relative flex justify-center mt-8">
+          <ProgressArc
+            value={proteinEaten}
+            max={Math.max(profile.proteinTarget, 1)}
+            size={240}
+            strokeWidth={13}
+            centerValue={`${proteinEaten}g`}
+            centerLabel="proteína"
+          />
+        </div>
+
+        {/* Bars — calories & water */}
+        <div className="flex flex-col gap-4 mt-6 px-1">
+          <div>
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-[11px] text-gray-500 uppercase tracking-widest">Calorías</span>
+              <span className="text-[11px] text-gray-500">{eaten} / {targetCal} kcal</span>
+            </div>
+            <div className="h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-white"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, ((eaten - burned) / targetCal) * 100)}%` }}
+                transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-[11px] text-gray-500 uppercase tracking-widest">Agua</span>
+              <span className="text-[11px] text-gray-500">{waterMl} / {WATER_TARGET_ML} ml</span>
+            </div>
+            <div className="h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-white/50"
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, (waterMl / WATER_TARGET_ML) * 100)}%` }}
+                transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.08 }}
+              />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 gap-3 w-full">
         <button
           type="button"
           onClick={() => setShowLogMeal(true)}
-          className="mt-4 w-full rounded-xl py-2.5 bg-white/10 text-gray-200 text-sm font-medium hover:bg-white/15 transition-colors"
+          className="w-full flex flex-row items-center justify-center gap-2 rounded-xl py-3.5 px-4 border border-white/10 bg-white/[0.04] active:bg-white/[0.08] active:scale-95 transition-all"
         >
-          Registrar comida &gt;
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+            <path d="M7 2v20" />
+            <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Z" />
+            <path d="M21 15v7" />
+          </svg>
+          <span className="text-xs font-medium text-white/80 whitespace-nowrap">Registrar comida</span>
         </button>
-      </Card>
 
-      {/* Water Minder */}
-      <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-blue-400">
-              <Droplets className="w-5 h-5" />
-            </span>
-            <h2 className="font-bold text-white">Water Minder</h2>
-          </div>
-          <span className="text-xs text-gray-400">0 <Flame className="w-3 h-3 inline" /></span>
-        </div>
-        <div className="flex items-center gap-4">
-          <ProgressRing value={waterMl} max={WATER_TARGET_ML} size={100} strokeWidth={8} />
-          <div className="flex-1">
-            <p className="text-2xl font-bold text-white">{Math.round(waterPct)}%</p>
-            <p className="text-sm text-gray-400">{waterMl} / {WATER_TARGET_ML} ml</p>
-            <button
-              type="button"
-              onClick={() => setShowLogDrink(true)}
-              className="mt-3 w-full rounded-xl py-2.5 bg-white/10 text-gray-200 text-sm font-medium hover:bg-white/15 transition-colors"
-            >
-              Log Drink &gt;
-            </button>
-          </div>
-        </div>
-      </Card>
+        <button
+          type="button"
+          onClick={() => setShowLogDrink(true)}
+          className="w-full flex flex-row items-center justify-center gap-2 rounded-xl py-3.5 px-4 border border-white/10 bg-white/[0.04] active:bg-white/[0.08] active:scale-95 transition-all"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5S12.5 5.5 12 3c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+          </svg>
+          <span className="text-xs font-medium text-white/80 whitespace-nowrap">Registrar agua</span>
+        </button>
+      </div>
 
-      {/* Weight Tracker */}
+      <MenuRecommender />
+
+      {/* Weight / BMI */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">
-              <Scale className="w-5 h-5" />
-            </span>
-            <h2 className="font-bold text-white">Weight Tracker</h2>
+        <div className="flex items-baseline justify-between mb-3">
+          <div>
+            <p className="text-3xl font-light text-white tabular-nums">{profile.weight} <span className="text-base text-gray-500">kg</span></p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-0.5">Peso registrado</p>
           </div>
-          <span className="text-xs text-gray-400">
-            {weightDiff <= 0 ? '' : '+'}{weightDiff} kg
-          </span>
+          <div className="text-right">
+            <p className="text-xl font-light text-white tabular-nums">{bmi.toFixed(1)}</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-0.5">IMC</p>
+          </div>
         </div>
-        <div className="mb-3">
-          <p className="text-3xl font-bold text-white">{bmi.toFixed(1)}</p>
-          <p className="text-xs text-gray-400">YOUR BMI</p>
-        </div>
-        <div className="relative h-3 rounded-full overflow-hidden bg-white/5">
+        <div className="relative h-[3px] rounded-full overflow-hidden bg-white/[0.07]">
           <div className="absolute inset-0 flex">
-            <div className="flex-1 bg-blue-500/60" />
-            <div className="flex-1 bg-green-500/60" />
-            <div className="flex-1 bg-yellow-500/60" />
-            <div className="flex-1 bg-orange-500/60" />
-            <div className="flex-1 bg-red-500/60" />
+            <div className="flex-1 bg-blue-500/50" />
+            <div className="flex-1 bg-green-500/50" />
+            <div className="flex-1 bg-yellow-500/50" />
+            <div className="flex-1 bg-orange-500/50" />
+            <div className="flex-1 bg-red-500/50" />
           </div>
           <div
             className="absolute top-0 bottom-0 w-1 bg-white rounded-full -translate-x-1/2"
             style={{ left: `${bmiCategory.position}%` }}
           />
         </div>
-        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-          <span>Underweight</span>
+        <div className="flex justify-between text-[9px] text-gray-600 mt-1.5 uppercase tracking-widest">
+          <span>Bajo</span>
           <span>Normal</span>
-          <span>Overweight</span>
-          <span>Obese</span>
+          <span>Sobrepeso</span>
+          <span>Obeso</span>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowLogWeight(true)}
-          className="mt-4 w-full rounded-xl py-2.5 bg-white/10 text-gray-200 text-sm font-medium hover:bg-white/15 transition-colors"
-        >
-          Log Weight &gt;
-        </button>
       </Card>
-
-      <MenuRecommender />
 
       <LogMealModal open={showLogMeal} onClose={() => setShowLogMeal(false)} />
       <LogDrinkModal open={showLogDrink} onClose={() => setShowLogDrink(false)} />
-      <LogWeightModal open={showLogWeight} onClose={() => setShowLogWeight(false)} />
     </div>
   )
 }

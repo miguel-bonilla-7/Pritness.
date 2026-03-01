@@ -79,57 +79,50 @@ export function LogMealModal({ open, onClose }: LogMealModalProps) {
   }
 
   return (
-    <Modal open={open} onClose={handleCerrar} title="Registrar comida con IA">
-      <div className="space-y-4">
-        <p className="text-sm text-gray-400">
-          Escribe lo que comiste y la IA calculará las calorías y proteínas. Por ejemplo: &quot;Arroz con pollo y ensalada&quot;, &quot;Café con leche y tostada&quot;.
-        </p>
+    <Modal open={open} onClose={handleCerrar} title="Registrar comida">
+      <div className="space-y-3">
         <form onSubmit={handleAnalizar} className="space-y-3">
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="¿Qué comiste? Describe los platos..."
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[100px] resize-y"
+            placeholder="¿Qué comiste?"
+            className="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/20 min-h-[80px] resize-none"
             rows={3}
             disabled={cargando}
           />
           <button
             type="submit"
             disabled={cargando || !texto.trim()}
-            className="w-full rounded-xl py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-black font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full rounded-xl py-2.5 border border-white/10 bg-white/[0.04] text-xs font-medium text-white/70 flex items-center justify-center gap-1.5 disabled:opacity-30 active:bg-white/[0.08] transition-colors"
           >
             {cargando ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Analizando...
-              </>
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" />Analizando...</>
             ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Analizar con IA
-              </>
+              <><Sparkles className="w-3.5 h-3.5" />Analizar con IA</>
             )}
           </button>
         </form>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+
+        {error && <p className="text-red-400 text-xs">{error}</p>}
+
         {resultado && (
-          <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
-            <p className="text-xs text-gray-400">{resultado.description}</p>
-            <div className="flex gap-4">
+          <div className="space-y-3 pt-1">
+            <p className="text-[11px] text-gray-500">{resultado.description}</p>
+            <div className="flex gap-6">
               <div>
-                <p className="text-2xl font-bold text-white">{Math.round(resultado.calories || 0)}</p>
-                <p className="text-xs text-gray-400">kcal</p>
+                <p className="text-2xl font-light text-white tabular-nums">{Math.round(resultado.calories || 0)}</p>
+                <p className="text-[10px] text-gray-600 uppercase tracking-widest">kcal</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{Math.round(resultado.protein || 0)}</p>
-                <p className="text-xs text-gray-400">proteína (g)</p>
+                <p className="text-2xl font-light text-white tabular-nums">{Math.round(resultado.protein || 0)}</p>
+                <p className="text-[10px] text-gray-600 uppercase tracking-widest">proteína g</p>
               </div>
             </div>
             {resultado.items && resultado.items.length > 0 && (
-              <ul className="text-sm text-gray-400 space-y-1">
+              <ul className="space-y-0.5">
                 {resultado.items.map((item, i) => (
-                  <li key={i}>
-                    {item.name}: {item.calories} kcal, {item.protein} g prot
+                  <li key={i} className="text-[11px] text-gray-500">
+                    {item.name} · {item.calories} kcal · {item.protein}g prot
                   </li>
                 ))}
               </ul>
@@ -138,9 +131,9 @@ export function LogMealModal({ open, onClose }: LogMealModalProps) {
               type="button"
               onClick={handleAñadirAMisDatos}
               disabled={guardando}
-              className="w-full rounded-xl py-2.5 bg-white/15 text-white font-medium hover:bg-white/20 disabled:opacity-50"
+              className="w-full rounded-xl py-2.5 border border-white/10 bg-white/[0.04] text-xs font-medium text-white/80 disabled:opacity-30 active:bg-white/[0.08] transition-colors"
             >
-              {guardando ? 'Guardando...' : 'Añadir a mis datos'}
+              {guardando ? 'Guardando...' : 'Añadir'}
             </button>
           </div>
         )}

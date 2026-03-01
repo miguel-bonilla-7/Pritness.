@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Dumbbell, Flame, Loader2, PlusCircle } from 'lucide-react'
-import { Card } from '../components/Card'
+import {
+  Loader2, Dumbbell, Flame, Zap, Activity, Waves,
+  Bike, Wind, HeartPulse, Footprints, Timer, Mountain,
+} from 'lucide-react'
 import { useDailyLog } from '../context/DailyLogContext'
 import { useUser } from '../context/UserContext'
 import { analyzeWOD } from '../lib/api'
-import { insertWod } from '../lib/supabase'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
@@ -15,6 +16,72 @@ function formatDate(dateStr: string): string {
   yesterday.setDate(yesterday.getDate() - 1)
   if (dateStr === yesterday.toISOString().slice(0, 10)) return 'Ayer'
   return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+// ── Exercise category detection ──────────────────────────────────────────────
+type LucideIcon = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>
+
+interface WodVisual {
+  gradient: [string, string]
+  Icon: LucideIcon
+  label: string
+}
+
+const WOD_CATEGORIES: { keywords: string[]; visual: WodVisual }[] = [
+  {
+    keywords: ['run', 'sprint', '400m', '800m', '1k', '5k', 'corr', 'metros', 'meter'],
+    visual: { gradient: ['#f97316', '#ef4444'], Icon: Footprints, label: 'Cardio' },
+  },
+  {
+    keywords: ['bike', 'cicl', 'cycling', 'bicicleta'],
+    visual: { gradient: ['#22c55e', '#14b8a6'], Icon: Bike, label: 'Ciclismo' },
+  },
+  {
+    keywords: ['swim', 'nadar', 'nado', 'pool', 'lap'],
+    visual: { gradient: ['#3b82f6', '#06b6d4'], Icon: Waves, label: 'Natación' },
+  },
+  {
+    keywords: ['row', 'remo', 'erg', 'rowing'],
+    visual: { gradient: ['#06b6d4', '#3b82f6'], Icon: Activity, label: 'Remo' },
+  },
+  {
+    keywords: ['pull', 'push', 'ring', 'rope', 'handstand', 'muscle', 'toes', 'bar', 'calisthenic', 'gymnastic'],
+    visual: { gradient: ['#a855f7', '#7c3aed'], Icon: Zap, label: 'Calistenia' },
+  },
+  {
+    keywords: ['deadlift', 'squat', 'press', 'snatch', 'clean', 'jerk', 'bench', 'peso', 'barbell', 'kg', 'lb', 'lift'],
+    visual: { gradient: ['#ef4444', '#a855f7'], Icon: Dumbbell, label: 'Levantamiento' },
+  },
+  {
+    keywords: ['hiit', 'interval', 'tabata', 'amrap', 'emom', 'wod', 'crossfit', 'circuit', 'round'],
+    visual: { gradient: ['#f97316', '#a855f7'], Icon: Flame, label: 'HIIT' },
+  },
+  {
+    keywords: ['hike', 'trail', 'mountain', 'cerro', 'senderismo', 'treking'],
+    visual: { gradient: ['#84cc16', '#22c55e'], Icon: Mountain, label: 'Senderismo' },
+  },
+  {
+    keywords: ['yoga', 'stretch', 'pilates', 'flex', 'mobility'],
+    visual: { gradient: ['#c084fc', '#ec4899'], Icon: HeartPulse, label: 'Movilidad' },
+  },
+  {
+    keywords: ['walk', 'caminar', 'caminata'],
+    visual: { gradient: ['#f59e0b', '#f97316'], Icon: Wind, label: 'Caminata' },
+  },
+]
+
+const DEFAULT_VISUAL: WodVisual = {
+  gradient: ['#f97316', '#7c3aed'],
+  Icon: Timer,
+  label: 'Entrenamiento',
+}
+
+function getWodVisual(description: string, exercises: string[]): WodVisual {
+  const text = [description, ...(exercises ?? [])].join(' ').toLowerCase()
+  for (const { keywords, visual } of WOD_CATEGORIES) {
+    if (keywords.some((kw) => text.includes(kw))) return visual
+  }
+  return DEFAULT_VISUAL
 }
 
 interface WodAddBlockProps {
@@ -28,7 +95,6 @@ interface WodAddBlockProps {
   setLastResult: (v: { description: string; exercises: string[]; estimatedCaloriesBurned: number } | null) => void
   onAddWod: (entry: { description: string; exercises: string[]; estimatedCaloriesBurned: number }) => void
   onSetBurned: (fn: (prev: number) => number) => void
-  profileId?: string
   userWeightKg?: number
 }
 
@@ -43,7 +109,6 @@ function WodAddBlock({
   setLastResult,
   onAddWod,
   onSetBurned,
-  profileId,
   userWeightKg,
 }: WodAddBlockProps) {
   const handleAnalyze = async () => {
@@ -65,67 +130,53 @@ function WodAddBlock({
     if (!lastResult) return
     onSetBurned((prev) => prev + lastResult.estimatedCaloriesBurned)
     onAddWod(lastResult)
-    if (profileId) {
-      const today = new Date().toISOString().slice(0, 10)
-      insertWod(profileId, {
-        date: today,
-        description: lastResult.description,
-        calories_burned: lastResult.estimatedCaloriesBurned,
-        source: 'text',
-      })
-    }
     setLastResult(null)
     setWodInput('')
   }
 
   return (
-    <Card>
-      <h3 className="font-medium text-white mb-2 flex items-center gap-2">
-        <PlusCircle className="w-4 h-4 text-orange-400" />
-        Añadir WOD aquí
-      </h3>
-      <p className="text-sm text-gray-400 mb-3">Describe tu rutina (pizarra del gym, texto o lo que hiciste).</p>
+    <div className="space-y-3">
       <textarea
         value={wodInput}
         onChange={(e) => setWodInput(e.target.value)}
-        placeholder="Ej: 5 rounds: 10 pull-ups, 20 push-ups, 30 air squats. 400m run."
-        className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[100px] resize-y text-sm"
+        placeholder="Describe tu entrenamiento..."
+        className="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/20 min-h-[80px] resize-none"
         rows={3}
       />
-      <div className="flex gap-2 mt-3">
+      <div className="flex gap-2">
         <button
           type="button"
           onClick={handleAnalyze}
           disabled={loading || !wodInput.trim()}
-          className="flex-1 rounded-xl py-2.5 bg-white/10 text-white font-medium hover:bg-white/15 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+          className="flex-1 rounded-xl py-2.5 border border-white/[0.08] bg-white/[0.04] text-xs font-medium text-white/70 disabled:opacity-30 flex items-center justify-center gap-1.5 active:bg-white/[0.08] transition-colors"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Dumbbell className="w-4 h-4" />}
-          Analizar WOD
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+          Analizar
         </button>
         {lastResult && (
           <button
             type="button"
             onClick={handleAddToLog}
-            className="flex-1 rounded-xl py-2.5 bg-gradient-to-r from-orange-500 to-yellow-500 text-black font-semibold text-sm"
+            className="flex-1 rounded-xl py-2.5 border border-white/[0.08] bg-white/[0.04] text-xs font-medium text-white/70 active:bg-white/[0.08] transition-colors"
           >
-            Añadir ~{lastResult.estimatedCaloriesBurned} kcal
+            + {lastResult.estimatedCaloriesBurned} kcal quemadas
           </button>
         )}
       </div>
       {lastResult && (
-        <div className="mt-3 pt-3 border-t border-white/10">
-          <p className="text-sm font-medium text-white">{lastResult.description}</p>
+        <div className="pt-2 space-y-1">
+          <p className="text-xs text-gray-400">{lastResult.description}</p>
           {lastResult.exercises?.length > 0 && (
-            <ul className="text-xs text-gray-400 mt-1 list-disc list-inside">
+            <ul className="space-y-0.5">
               {lastResult.exercises.slice(0, 4).map((ex, i) => (
-                <li key={i}>{ex}</li>
+                <li key={i} className="text-[11px] text-gray-500">· {ex}</li>
               ))}
             </ul>
           )}
         </div>
       )}
-      {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
-    </Card>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+    </div>
   )
 }
 
@@ -137,85 +188,85 @@ export function WODsPage() {
   const [error, setError] = useState('')
   const [lastResult, setLastResult] = useState<{ description: string; exercises: string[]; estimatedCaloriesBurned: number } | null>(null)
 
+  const addBlock = (
+    <WodAddBlock
+      wodInput={wodInput} setWodInput={setWodInput}
+      loading={loading} setLoading={setLoading}
+      error={error} setError={setError}
+      lastResult={lastResult} setLastResult={setLastResult}
+      onAddWod={addWod} onSetBurned={(fn) => setBurned(fn)}
+      userWeightKg={profile?.weight}
+    />
+  )
+
   if (wods.length === 0) {
     return (
-      <div className="p-4 space-y-4 overflow-auto min-h-0">
-        <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-          <Dumbbell className="w-6 h-6 text-orange-400" />
-          WODs
-        </h2>
-        <Card>
-          <p className="text-gray-400 text-center py-6">
-            Aún no has registrado ningún WOD. Regístralo aquí abajo o ve a <strong>Cámara</strong> y sube una foto / describe tu entrenamiento.
-          </p>
-        </Card>
-        <WodAddBlock
-          wodInput={wodInput}
-          setWodInput={setWodInput}
-          loading={loading}
-          setLoading={setLoading}
-          error={error}
-          setError={setError}
-          lastResult={lastResult}
-          setLastResult={setLastResult}
-          onAddWod={addWod}
-          onSetBurned={(fn) => setBurned(fn)}
-          profileId={profile?.id}
-          userWeightKg={profile?.weight}
-        />
+      <div className="p-5 space-y-6 overflow-auto min-h-0">
+        <p className="text-sm font-medium text-white">Entrenamiento</p>
+        {addBlock}
+        <p className="text-[11px] text-gray-600 text-center">Describe lo que hiciste y la IA estimará las calorías quemadas.</p>
       </div>
     )
   }
 
   return (
-    <div className="p-4 space-y-4 overflow-auto min-h-0">
-      <h2 className="text-xl font-bold text-white flex items-center gap-2">
-        <Dumbbell className="w-6 h-6 text-orange-400" />
-        Registro de WODs
-      </h2>
-      <p className="text-sm text-gray-400">Registra un WOD aquí o revisa los que ya guardaste.</p>
+    <div className="p-5 space-y-6 overflow-auto min-h-0">
+      <p className="text-sm font-medium text-white">Entrenamiento</p>
+      {addBlock}
 
-      <WodAddBlock
-        wodInput={wodInput}
-        setWodInput={setWodInput}
-        loading={loading}
-        setLoading={setLoading}
-        error={error}
-        setError={setError}
-        lastResult={lastResult}
-        setLastResult={setLastResult}
-        onAddWod={addWod}
-        onSetBurned={(fn) => setBurned(fn)}
-        profileId={profile?.id}
-        userWeightKg={profile?.weight}
-      />
-
-      <ul className="space-y-3">
-        {wods.map((wod) => (
-          <li key={wod.id}>
-            <Card>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">{formatDate(wod.date)}</p>
-                  <p className="font-medium text-white mt-0.5">{wod.description}</p>
-                  {wod.exercises && wod.exercises.length > 0 && (
-                    <ul className="mt-2 text-sm text-gray-400 list-disc list-inside space-y-0.5">
-                      {wod.exercises.map((ex, i) => (
-                        <li key={i}>{ex}</li>
-                      ))}
-                    </ul>
-                  )}
+      {/* History */}
+      <div className="space-y-3">
+        {wods.map((wod) => {
+          const { gradient, Icon, label } = getWodVisual(wod.description, wod.exercises)
+          return (
+            <div
+              key={wod.id}
+              className="rounded-2xl overflow-hidden"
+              style={{ background: '#16161f' }}
+            >
+              {/* Color strip with icon */}
+              <div
+                className="flex items-center gap-3 px-4 py-3"
+                style={{ background: `linear-gradient(135deg, ${gradient[0]}22 0%, ${gradient[1]}11 100%)`,
+                         borderBottom: `1px solid ${gradient[0]}22` }}
+              >
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${gradient[0]}, ${gradient[1]})` }}
+                >
+                  <Icon size={18} color="white" strokeWidth={1.8} />
                 </div>
-                <div className="shrink-0 flex items-center gap-1 text-orange-400">
-                  <Flame className="w-4 h-4" />
-                  <span className="font-bold text-white">{wod.estimatedCaloriesBurned}</span>
-                  <span className="text-xs text-gray-400">kcal</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white">{label}</p>
+                  <p className="text-[10px] text-white/40">{formatDate(wod.date)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-light text-white tabular-nums">{wod.estimatedCaloriesBurned}</p>
+                  <p className="text-[9px] uppercase tracking-widest" style={{ color: gradient[0] }}>kcal</p>
                 </div>
               </div>
-            </Card>
-          </li>
-        ))}
-      </ul>
+
+              {/* Description + exercises */}
+              <div className="px-4 py-3 space-y-1.5">
+                <p className="text-xs text-white/60 leading-snug">{wod.description}</p>
+                {wod.exercises?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {wod.exercises.slice(0, 5).map((ex, j) => (
+                      <span
+                        key={j}
+                        className="text-[10px] px-2 py-0.5 rounded-full"
+                        style={{ background: `${gradient[0]}18`, color: gradient[0] }}
+                      >
+                        {ex}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
