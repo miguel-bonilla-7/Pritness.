@@ -4,24 +4,51 @@ import { useAuth } from '../context/AuthContext'
 import { updateNotificationPreference } from '../lib/supabase'
 import { registerPushForProfile } from '../lib/push'
 
+const LS_KEY = 'pritness_notification_answered'
+
+function hasAnsweredForProfile(profileId: string): boolean {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (!raw) return false
+    const ids = JSON.parse(raw) as string[]
+    return Array.isArray(ids) && ids.includes(profileId)
+  } catch {
+    return false
+  }
+}
+
+function markAnsweredForProfile(profileId: string) {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    const ids: string[] = raw ? JSON.parse(raw) : []
+    if (!ids.includes(profileId)) {
+      ids.push(profileId)
+      localStorage.setItem(LS_KEY, JSON.stringify(ids))
+    }
+  } catch {}
+}
+
 export function NotificationPrompt() {
   const { profile, setProfile } = useUser()
   const { refetchProfile } = useAuth()
   const [choosing, setChoosing] = useState(false)
 
-  const show = profile?.id && (profile?.notification_prompt_shown ?? false) === false
+  const fromDb = (profile?.notification_prompt_shown ?? false) === true
+  const fromLs = profile?.id ? hasAnsweredForProfile(profile.id) : false
+  const alreadyAnswered = fromDb || fromLs
+  const show = profile?.id && !alreadyAnswered
 
   const handleChoice = async (wants: boolean) => {
     if (!profile?.id || choosing) return
     setChoosing(true)
-    // Cerrar modal al instante
+    markAnsweredForProfile(profile.id)
     setProfile({ ...profile, notification_prompt_shown: true })
     try {
-      await updateNotificationPreference(profile.id, wants)
-      if (wants) {
-        await registerPushForProfile(profile.id)
+      const { error } = await updateNotificationPreference(profile.id, wants)
+      if (!error) {
+        if (wants) await registerPushForProfile(profile.id)
+        await refetchProfile()
       }
-      await refetchProfile()
     } catch (e) {
       console.warn('[NotificationPrompt] Error:', e)
     } finally {
@@ -32,7 +59,7 @@ export function NotificationPrompt() {
   if (!show) return null
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center px-4 pb-24">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70" aria-hidden />
       <div
         className="relative z-10 w-full max-w-[320px] rounded-2xl px-5 py-4"

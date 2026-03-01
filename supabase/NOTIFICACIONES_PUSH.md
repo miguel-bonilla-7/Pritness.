@@ -2,10 +2,9 @@
 
 ## 1. Migración de base de datos
 
-Ejecuta en el SQL Editor de Supabase (en este orden):
+Ejecuta en el SQL Editor de Supabase:
 
-1. `supabase/migrations/add_push_notifications.sql`
-2. `supabase/migrations/add_notification_prompt_shown.sql` (para que usuarios existentes vean el prompt)
+- `supabase/migrations/add_push_notifications.sql` (incluye wants_notifications y notification_prompt_shown)
 
 ## 2. Claves VAPID
 
