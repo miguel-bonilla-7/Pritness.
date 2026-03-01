@@ -3,7 +3,8 @@ import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
 
 interface SwipeToDeleteProps {
-  onDelete: () => void
+  /** Si retorna Promise<boolean>, se espera confirmación. true = eliminar, false = cancelar. */
+  onDelete: () => void | Promise<boolean>
   onTap?: () => void
   children: React.ReactNode
 }
@@ -16,9 +17,17 @@ export function SwipeToDelete({ onDelete, onTap, children }: SwipeToDeleteProps)
   const deleteScale = useTransform(x, [0, THRESHOLD], [0.6, 1])
   const constraintsRef = useRef(null)
 
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     if (x.get() < THRESHOLD) {
-      animate(x, -500, { duration: 0.25, ease: 'easeIn' }).then(onDelete)
+      const result = onDelete()
+      const proceed = result instanceof Promise ? await result : true
+      if (proceed) {
+        animate(x, -500, { duration: 0.25, ease: 'easeIn' }).then(() => {
+          // El padre ya eliminó; el componente se desmontará
+        })
+      } else {
+        animate(x, 0, { type: 'spring', stiffness: 400, damping: 30 })
+      }
     } else {
       animate(x, 0, { type: 'spring', stiffness: 400, damping: 30 })
     }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useUser } from '../context/UserContext'
 import { PageSpinner } from '../components/PageSpinner'
@@ -9,6 +9,7 @@ import { MenuRecommender } from '../components/MenuRecommender'
 import { LogMealModal } from '../components/LogMealModal'
 import { LogDrinkModal } from '../components/LogDrinkModal'
 import { SwipeToDelete } from '../components/SwipeToDelete'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { MealDetailSheet, getMealIconNode } from '../components/MealDetailSheet'
 
 const WATER_TARGET_ML = 2000
@@ -33,6 +34,8 @@ export function DashboardPage() {
   const [showLogMeal, setShowLogMeal] = useState(false)
   const [showLogDrink, setShowLogDrink] = useState(false)
   const [selectedMeal, setSelectedMeal] = useState<MealEntry | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string } | null>(null)
+  const deleteResolveRef = useRef<((v: boolean) => void) | null>(null)
 
   if (!profile) return <PageSpinner message="Cargando perfil..." />
 
@@ -197,7 +200,15 @@ export function DashboardPage() {
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <SwipeToDelete onDelete={() => removeMeal(meal.id)} onTap={() => setSelectedMeal(meal)}>
+                  <SwipeToDelete
+                    onDelete={() =>
+                      new Promise<boolean>((resolve) => {
+                        deleteResolveRef.current = resolve
+                        setDeleteConfirm({ id: meal.id })
+                      })
+                    }
+                    onTap={() => setSelectedMeal(meal)}
+                  >
                     <div className="w-full bg-[#111111] border border-white/[0.07] rounded-2xl px-4 py-3.5 flex items-center gap-3">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0"
@@ -232,6 +243,21 @@ export function DashboardPage() {
 
       <LogMealModal open={showLogMeal} onClose={() => setShowLogMeal(false)} />
       <LogDrinkModal open={showLogDrink} onClose={() => setShowLogDrink(false)} />
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        message="¿Eliminar esta comida?"
+        onConfirm={() => {
+          if (deleteConfirm) removeMeal(deleteConfirm.id)
+          deleteResolveRef.current?.(true)
+          deleteResolveRef.current = null
+          setDeleteConfirm(null)
+        }}
+        onCancel={() => {
+          deleteResolveRef.current?.(false)
+          deleteResolveRef.current = null
+          setDeleteConfirm(null)
+        }}
+      />
       <MealDetailSheet
         meal={selectedMeal}
         onClose={() => setSelectedMeal(null)}

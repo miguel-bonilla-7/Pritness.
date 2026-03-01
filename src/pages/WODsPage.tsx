@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Loader2, Dumbbell, Flame, Zap, Activity, Waves,
   Bike, Wind, HeartPulse, Footprints, Timer, Mountain,
@@ -8,6 +8,7 @@ import { useDailyLog } from '../context/DailyLogContext'
 import { useUser } from '../context/UserContext'
 import { analyzeWOD } from '../lib/api'
 import { SwipeToDelete } from '../components/SwipeToDelete'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
@@ -189,6 +190,8 @@ export function WODsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [lastResult, setLastResult] = useState<{ description: string; exercises: string[]; estimatedCaloriesBurned: number } | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string } | null>(null)
+  const deleteResolveRef = useRef<((v: boolean) => void) | null>(null)
 
   const addBlock = (
     <WodAddBlock
@@ -232,7 +235,14 @@ export function WODsPage() {
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <SwipeToDelete onDelete={() => removeWod(wod.id)}>
+                <SwipeToDelete
+                  onDelete={() =>
+                    new Promise<boolean>((resolve) => {
+                      deleteResolveRef.current = resolve
+                      setDeleteConfirm({ id: wod.id })
+                    })
+                  }
+                >
                   <div className="rounded-2xl overflow-hidden" style={{ background: '#16161f' }}>
                     {/* Color strip with icon */}
                     <div
@@ -276,6 +286,22 @@ export function WODsPage() {
           })}
         </AnimatePresence>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        message="¿Eliminar este entrenamiento?"
+        onConfirm={() => {
+          if (deleteConfirm) removeWod(deleteConfirm.id)
+          deleteResolveRef.current?.(true)
+          deleteResolveRef.current = null
+          setDeleteConfirm(null)
+        }}
+        onCancel={() => {
+          deleteResolveRef.current?.(false)
+          deleteResolveRef.current = null
+          setDeleteConfirm(null)
+        }}
+      />
     </div>
   )
 }
