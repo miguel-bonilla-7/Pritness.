@@ -13,21 +13,27 @@ html {
   @apply text-white antialiased;
   font-family: 'Inter', system-ui, sans-serif;
   background-color: var(--color-app);
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
   @apply min-h-screen;
   background-color: var(--color-app);
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 #root {
-  min-height: 100vh;
-  background-color: var(--color-app);
+  position: fixed;
+  inset: 0;
   overflow: hidden;
+  background-color: var(--color-app);
 }
 
 /* Ocultar scrollbar en toda la app (mantiene el scroll) */
