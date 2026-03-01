@@ -23,7 +23,7 @@ export function MainLayout() {
       </header>
       <main className="flex-1 flex flex-col min-h-0 relative overflow-hidden overscroll-none">
         <PullToRefresh onRefresh={handleRefresh} />
-        <div className="flex-1 min-h-0 flex flex-col [&>*]:flex-1 [&>*]:min-h-0 pb-20">
+        <div className="flex-1 min-h-0 flex flex-col [&>*]:flex-1 [&>*]:min-h-0 pb-[max(5.5rem,calc(5.5rem+env(safe-area-inset-bottom)))]">
           <Outlet />
         </div>
       </main>
