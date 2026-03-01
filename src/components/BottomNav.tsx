@@ -1,9 +1,9 @@
-import { LayoutDashboard, Dumbbell, Camera, MessageCircle, User } from 'lucide-react'
+import { House, Dumbbell, Camera, MessageCircle, User } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useCamera } from '../context/CameraContext'
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: House, label: 'Home' },
   { to: '/wods', icon: Dumbbell, label: 'WODs' },
   { central: true as const },
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
