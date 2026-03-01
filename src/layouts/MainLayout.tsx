@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BottomNav } from '../components/BottomNav'
+import { NotificationPrompt } from '../components/NotificationPrompt'
 import { OfflineBanner } from '../components/OfflineBanner'
 import { PageSpinner } from '../components/PageSpinner'
 import { CameraProvider } from '../context/CameraContext'
@@ -50,6 +51,7 @@ export function MainLayout() {
         </div>
       </main>
       <BottomNav />
+      <NotificationPrompt />
       {isReloading && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center"

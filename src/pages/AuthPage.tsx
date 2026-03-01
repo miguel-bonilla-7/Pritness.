@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useUser, type Goal, type UserProfile } from '../context/UserContext'
 import { PageSpinner } from '../components/PageSpinner'
 import { supabase, insertProfile, insertWeightLog } from '../lib/supabase'
+import { registerPushForProfile } from '../lib/push'
 import { calculateTMB, getTargetsFromGoal } from '../lib/tmb'
 
 type Mode = 'login' | 'register' | null
@@ -63,6 +64,7 @@ export function AuthPage() {
   const [age, setAge] = useState('')
   const [goal, setGoal] = useState<Goal>('definir_masa')
   const [sex, setSex] = useState<'male' | 'female'>('male')
+  const [wantsNotifications, setWantsNotifications] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -104,11 +106,15 @@ export function AuthPage() {
         age: profileData.age, goal: profileData.goal, sex: profileData.sex ?? null, tmb: profileData.tmb,
         daily_calories_target: profileData.dailyCaloriesTarget, protein_target: profileData.proteinTarget,
         carbs_target: profileData.carbsTarget, fat_target: profileData.fatTarget,
+        wants_notifications: wantsNotifications,
       })
       if (insertErr) { setError(insertErr.message); return }
       if (inserted) {
         profileData.id = inserted.id
         await insertWeightLog(inserted.id, profileData.weight)
+        if (wantsNotifications) {
+          await registerPushForProfile(inserted.id)
+        }
       }
       setProfile(profileData)
       navigate('/dashboard', { replace: true })
@@ -295,6 +301,29 @@ export function AuthPage() {
                             </motion.button>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Notificaciones */}
+                      <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5 bg-white/[0.04] border border-white/[0.07]">
+                        <label className="flex-1 cursor-pointer">
+                          <span className="text-sm font-medium text-white">Recibir notificaciones</span>
+                          <p className="text-[11px] text-white/40 mt-0.5">Recordatorios de agua, comidas y ejercicio según tus metas</p>
+                        </label>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={wantsNotifications}
+                          onClick={() => setWantsNotifications((v) => !v)}
+                          className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
+                            wantsNotifications ? 'bg-orange-500' : 'bg-white/10'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                              wantsNotifications ? 'left-6' : 'left-1'
+                            }`}
+                          />
+                        </button>
                       </div>
 
                       {/* Objetivo */}

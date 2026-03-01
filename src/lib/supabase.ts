@@ -56,6 +56,8 @@ export interface DbProfile {
   protein_target: number
   carbs_target: number
   fat_target: number
+  wants_notifications?: boolean
+  notification_prompt_shown?: boolean
   created_at: string
   updated_at: string
 }
@@ -97,6 +99,7 @@ export async function insertProfile(
     protein_target: number
     carbs_target: number
     fat_target: number
+    wants_notifications?: boolean
   }
 ): Promise<{ data: DbProfile | null; error: Error | null }> {
   if (!isConfigured) return { data: null, error: new Error('Supabase no configurada') }
@@ -117,6 +120,8 @@ export async function insertProfile(
         protein_target: profile.protein_target,
         carbs_target: profile.carbs_target,
         fat_target: profile.fat_target,
+        wants_notifications: profile.wants_notifications ?? false,
+        notification_prompt_shown: true,
       })
       .select()
       .single()
@@ -147,6 +152,8 @@ export async function updateProfileInDb(
     goal?: string
     sex?: string | null
     tmb?: number
+    wants_notifications?: boolean
+    notification_prompt_shown?: boolean
     daily_calories_target?: number
     protein_target?: number
     carbs_target?: number
@@ -424,6 +431,50 @@ export async function deleteWod(wodId: string): Promise<{ error: Error | null }>
   }
 }
 
+/** Guarda o actualiza la suscripción push del usuario */
+export async function savePushSubscription(
+  profileId: string,
+  subscription: { endpoint: string; keys: { p256dh: string; auth: string } }
+): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: null }
+  try {
+    const { error } = await supabase.from('push_subscriptions').upsert(
+      {
+        user_id: profileId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      },
+      { onConflict: 'user_id,endpoint' }
+    )
+    if (error) return { error: new Error(error.message) }
+    return { error: null }
+  } catch (err) {
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
+/** Actualiza preferencia de notificaciones y marca que ya se mostró el prompt */
+export async function updateNotificationPreference(
+  profileId: string,
+  wantsNotifications: boolean
+): Promise<{ error: Error | null }> {
+  if (!isConfigured) return { error: new Error('Supabase no configurada') }
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        wants_notifications: wantsNotifications,
+        notification_prompt_shown: true,
+      })
+      .eq('id', profileId)
+    if (error) return { error: new Error(error.message) }
+    return { error: null }
+  } catch (err) {
+    return { error: err instanceof Error ? err : new Error(String(err)) }
+  }
+}
+
 /** Mapea fila de Supabase al tipo UserProfile de la app */
 export function mapDbProfileToUserProfile(db: DbProfile): {
   id: string
@@ -438,6 +489,7 @@ export function mapDbProfileToUserProfile(db: DbProfile): {
   carbsTarget: number
   fatTarget: number
   sex?: 'male' | 'female'
+  notification_prompt_shown?: boolean
 } {
   return {
     id: db.id,
@@ -452,5 +504,6 @@ export function mapDbProfileToUserProfile(db: DbProfile): {
     carbsTarget: db.carbs_target,
     fatTarget: db.fat_target,
     sex: db.sex === 'male' || db.sex === 'female' ? db.sex : undefined,
+    notification_prompt_shown: db.notification_prompt_shown ?? false,
   }
 }

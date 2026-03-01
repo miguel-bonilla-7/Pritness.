@@ -16,6 +16,7 @@ export interface UserProfile {
   fatTarget: number
   sex?: 'male' | 'female'
   country?: string
+  notification_prompt_shown?: boolean
 }
 
 interface UserContextValue {
