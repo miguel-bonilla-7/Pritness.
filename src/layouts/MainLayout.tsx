@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BottomNav } from '../components/BottomNav'
 import { OfflineBanner } from '../components/OfflineBanner'
 import { PageSpinner } from '../components/PageSpinner'
@@ -8,6 +8,23 @@ import { CameraProvider } from '../context/CameraContext'
 
 export function MainLayout() {
   const [isReloading, setIsReloading] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const currentPathRef = useRef(location.pathname)
+
+  useEffect(() => {
+    currentPathRef.current = location.pathname
+  }, [location.pathname])
+
+  // Bloquear gesto "deslizar derecha = atrás" del navegador para no salir de la página actual
+  useEffect(() => {
+    const handlePopState = () => {
+      const stayOn = currentPathRef.current
+      navigate(stayOn, { replace: true })
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [navigate])
 
   const handleRefresh = () => {
     setIsReloading(true)
